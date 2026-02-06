@@ -46,7 +46,8 @@ class HelpSupportScreen extends StatelessWidget {
                 label: const Text("Contact Support",
                     style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBtnColor, // Purple from screenshot
+                  backgroundColor: primaryBtnColor,
+                  // Purple from screenshot
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
