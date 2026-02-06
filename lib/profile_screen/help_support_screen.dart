@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
+
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -44,7 +46,7 @@ class HelpSupportScreen extends StatelessWidget {
                 label: const Text("Contact Support",
                     style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C3AED), // Purple from screenshot
+                  backgroundColor: primaryBtnColor, // Purple from screenshot
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
