@@ -102,7 +102,7 @@ class _AddressScreenState extends State<AddressScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                         ),
                       ],
@@ -146,7 +146,7 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
           ),
 
-          /// ➕ ADD ADDRESS
+          /// ADD ADDRESS
           Padding(
             padding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -175,7 +175,7 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
           ),
 
-          /// ✅ CONFIRM
+
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
             child: ElevatedButton(

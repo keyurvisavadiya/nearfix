@@ -65,7 +65,6 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
         },
       );
 
-      print("Response: ${response.body}");
       final data = jsonDecode(response.body);
 
       if (data['success'] == true) {
@@ -76,7 +75,6 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
         _showMsg(data['message'] ?? "Failed to save", Colors.red);
       }
     } catch (e) {
-      print("Error: $e");
       _showMsg("Connection Error. Is Ngrok running?", Colors.red);
     } finally {
       if (mounted) setState(() => isLoading = false);

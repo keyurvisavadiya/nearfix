@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nearfix/booking_screen/bookings_screen.dart';
-import 'package:nearfix/chat_screen/chat_screen.dart';
 import 'package:nearfix/profile_screen/profile_screen.dart';
 // Ensure these imports match your actual file paths
 import '../address_screen/address_screen.dart';
 import '../all_service_providers/all_service_providers.dart';
+import '../chat_screen/chat_screen_tile.dart';
 import '../service_providers/service_providers.dart';
 
 const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12)],
         ),
         child: Column(
           children: [
@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: BottomNavigationBar(
@@ -323,14 +323,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _statusBadge(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
     );
   }
 
   Widget _iconAction(IconData icon, Color color) {
     return Container(
-      decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
       child: IconButton(icon: Icon(icon, color: color, size: 20), onPressed: () {}),
     );
   }
