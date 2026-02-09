@@ -1,34 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/address_screen/address_screen.dart';
 import 'package:nearfix/profile_screen/edit_profile.dart';
 import 'package:nearfix/profile_screen/help_support_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+import '../authentication/sign_in.dart';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  // Helper method to handle navigation or actions
-  void _navigateTo(BuildContext context, String screenName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Navigating to $screenName...'), duration: const Duration(seconds: 1)),
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Variables to hold current user data
+  bool _isLoggedIn = false;
+  String _userName = "Guest User";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(); // Load data from database-saved session
+  }
+
+  /// Fetch the user name and login status from SharedPreferences
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+      // 'userName' must match the key you used in your LoginScreen save logic
+      _userName = prefs.getString('userName') ?? "Guest User";
+    });
+  }
+
+  ///  Clear the session and redirect to Login
+  Future<void> _handleLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.remove('userName');
+    await prefs.remove('user_id');
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
     );
   }
 
-  // Logout confirmation dialog
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Logout"),
-        content: const Text("Are you sure you want to log out of your account?"),
+        content: const Text("Are you sure you want to log out?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Add actual logout logic here
+              _handleLogout();
             },
             child: const Text("Logout", style: TextStyle(color: Colors.red)),
           ),
@@ -43,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(), // Now uses the dynamic _userName
           const SizedBox(height: 24),
           Expanded(
             child: ListView(
@@ -55,26 +88,13 @@ class ProfileScreen extends StatelessWidget {
                   icon: Icons.person_rounded,
                   title: "Edit Profile",
                   color: Colors.indigo,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                    );
-                  },
-                ),
-                _profileTile(
-                  icon: Icons.payment_rounded,
-                  title: "Payment Methods",
-                  color: Colors.teal,
-                  onTap: () => _navigateTo(context, "Payments"),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
                 ),
                 _profileTile(
                   icon: Icons.location_on_rounded,
                   title: "Saved Addresses",
                   color: Colors.orange,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context)=>AddressScreen()));
-                  }
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen())),
                 ),
 
                 const SizedBox(height: 16),
@@ -83,18 +103,28 @@ class ProfileScreen extends StatelessWidget {
                   icon: Icons.help_center_rounded,
                   title: "Help & Support",
                   color: Colors.blue,
-                    onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context)=>HelpSupportScreen()));
-          },
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
                 ),
 
                 const SizedBox(height: 16),
-                _profileTile(
+
+                // Show Logout if logged in, otherwise show Login
+                _isLoggedIn
+                    ? _profileTile(
                   icon: Icons.logout_rounded,
                   title: "Logout",
                   color: Colors.red,
                   isLogout: true,
-                  onTap: () => _showLogoutDialog(context),
+                  onTap: _showLogoutDialog,
+                )
+                    : _profileTile(
+                  icon: Icons.login_rounded,
+                  title: "Login / Sign Up",
+                  color: const Color(0xFF7C3AED),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()))
+                        .then((_) => _loadUserData()); // Refresh when returning
+                  },
                 ),
                 const SizedBox(height: 40),
               ],
@@ -122,35 +152,20 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.amber.withOpacity(0.5), width: 2),
-            ),
-            child: const CircleAvatar(
-              radius: 45,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-            ),
+          const CircleAvatar(
+            radius: 45,
+            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Alex Morgan",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
+          //  DYNAMIC NAME FROM DATABASE
+          Text(
+              _userName,
+              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
           ),
           const SizedBox(height: 4),
-          const Text(
-            "Gold Member",
-            style: TextStyle(
-              color: Colors.amber,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+          Text(
+              _isLoggedIn ? "Gold Member" : "Guest",
+              style: const TextStyle(color: Colors.amber, fontSize: 14, fontWeight: FontWeight.w600)
           ),
         ],
       ),
@@ -162,12 +177,7 @@ class ProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.black45,
-          letterSpacing: 1.2,
-        ),
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45, letterSpacing: 1.2),
       ),
     );
   }
@@ -177,45 +187,32 @@ class ProfileScreen extends StatelessWidget {
     required String title,
     required Color color,
     required VoidCallback onTap,
-    bool isLogout = false,
+    bool isLogout = false
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: ListTile(
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
           child: Icon(icon, color: color, size: 22),
         ),
         title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: isLogout ? Colors.red : const Color(0xFF1E293B),
-          ),
+            title,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: isLogout ? Colors.red : const Color(0xFF1E293B)
+            )
         ),
-        trailing: Icon(
-          Icons.chevron_right_rounded,
-          color: isLogout ? Colors.red.withOpacity(0.4) : Colors.grey.shade400,
-        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
       ),
     );
   }
