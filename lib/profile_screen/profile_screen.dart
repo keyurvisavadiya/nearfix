@@ -1,9 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/address_screen/address_screen.dart';
 import 'package:nearfix/profile_screen/edit_profile.dart';
 import 'package:nearfix/profile_screen/help_support_screen.dart';
-
 import '../authentication/sign_in.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,35 +15,62 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Variables to hold current user data
   bool _isLoggedIn = false;
   String _userName = "Guest User";
+  int? _userId;
+  String? _profilePic;
+
+  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Load data from database-saved session
+    _loadUserData();
   }
 
-  /// Fetch the user name and login status from SharedPreferences
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-      // 'userName' must match the key you used in your LoginScreen save logic
       _userName = prefs.getString('userName') ?? "Guest User";
+      _userId = prefs.getInt('user_id');
+      _profilePic = prefs.getString('profile_pic');
     });
+
+    // Sync with DB to get the actual current image
+    if (_isLoggedIn && _userId != null) {
+      _fetchLatestProfileFromDB();
+    }
   }
 
-  ///  Clear the session and redirect to Login
+  Future<void> _fetchLatestProfileFromDB() async {
+    try {
+      final response = await http.get(
+        Uri.parse("${_baseUrl}get_user_details.php?user_id=$_userId"),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          String latestPic = data['profile_image'] ?? "";
+          setState(() {
+            _profilePic = latestPic;
+            _userName = data['name'] ?? _userName;
+          });
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('profile_pic', latestPic);
+        }
+      }
+    } catch (e) {
+      debugPrint("Sync Error: $e");
+    }
+  }
+
   Future<void> _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('userName');
-    await prefs.remove('user_id');
-
+    await prefs.clear();
     if (!mounted) return;
-
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -76,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
-          _buildHeader(), // Now uses the dynamic _userName
+          _buildHeader(),
           const SizedBox(height: 24),
           Expanded(
             child: ListView(
@@ -88,7 +116,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.person_rounded,
                   title: "Edit Profile",
                   color: Colors.indigo,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+                  onTap: () {
+                    if (_isLoggedIn && _userId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProfileScreen(userId: _userId!),
+                        ),
+                      ).then((value) {
+                        if (value == true) _loadUserData();
+                      });
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please Login First")),
+                      );
+                    }
+                  },
                 ),
                 _profileTile(
                   icon: Icons.location_on_rounded,
@@ -96,7 +139,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.orange,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen())),
                 ),
-
                 const SizedBox(height: 16),
                 _sectionTitle("Support"),
                 _profileTile(
@@ -105,10 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Colors.blue,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
                 ),
-
                 const SizedBox(height: 16),
-
-                // Show Logout if logged in, otherwise show Login
                 _isLoggedIn
                     ? _profileTile(
                   icon: Icons.logout_rounded,
@@ -123,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFF7C3AED),
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()))
-                        .then((_) => _loadUserData()); // Refresh when returning
+                        .then((_) => _loadUserData());
                   },
                 ),
                 const SizedBox(height: 40),
@@ -136,6 +175,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildHeader() {
+    ImageProvider profileImage;
+    if (_profilePic != null && _profilePic!.isNotEmpty) {
+      // Added v=timestamp to bypass cache
+      profileImage = NetworkImage("$_baseUrl$_profilePic?v=${DateTime.now().millisecondsSinceEpoch}");
+    } else {
+      profileImage = const NetworkImage('');
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 64, 24, 40),
@@ -152,12 +199,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 45,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+            backgroundColor: Colors.white24,
+            backgroundImage: profileImage,
           ),
           const SizedBox(height: 16),
-          //  DYNAMIC NAME FROM DATABASE
           Text(
               _userName,
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)

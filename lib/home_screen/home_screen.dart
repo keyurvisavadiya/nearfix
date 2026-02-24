@@ -1,13 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:nearfix/booking_screen/booking_screen_details.dart';
 import 'package:nearfix/booking_screen/bookings_screen.dart';
 import 'package:nearfix/profile_screen/profile_screen.dart';
-// Ensure these imports match your actual file paths
+import 'package:nearfix/service_provider_detail/service_provider_detail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../address_screen/address_screen.dart';
 import '../all_service_providers/all_service_providers.dart';
 import '../chat_screen/chat_screen_tile.dart';
+import '../notifications/notifications.dart';
 import '../service_providers/service_providers.dart';
 
-const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
+const Color primaryBtnColor = Color(0xFF33365D);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +23,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int currentIndex = 0;
+  List<dynamic> _dbProviders = [];
+  Map<String, dynamic>? _upcomingBooking;
+  bool _isLoading = true;
+
+  // Ensure this URL is updated to your current active Ngrok link
+  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
 
   final List<Map<String, dynamic>> services = [
     {"icon": Icons.cleaning_services, "title": "Cleaning"},
@@ -31,17 +42,56 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 1;
+
+      // 1. Fetch Recommended Providers
+      final providersRes = await http.get(
+        Uri.parse("${_baseUrl}get_providers.php"),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
+
+      // 2. Fetch the Dynamic Upcoming Booking
+      final bookingRes = await http.get(
+        Uri.parse("${_baseUrl}get_upcoming_booking.php?user_id=$userId"),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
+
+      if (!mounted) return;
+
+      if (providersRes.statusCode == 200 && bookingRes.statusCode == 200) {
+        final providersData = json.decode(providersRes.body);
+        final bookingData = json.decode(bookingRes.body);
+
+        setState(() {
+          _dbProviders = providersData['data'] ?? [];
+          _upcomingBooking = (bookingData['status'] == 'success') ? bookingData['data'] : null;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Fetch Error: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7F9),
-      // AppBar only shows on the Home Tab
       appBar: currentIndex == 0 ? _buildHomeAppBar() : null,
       body: _buildBodyContent(),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  /// 1. Navigation Logic for Tabs
   Widget _buildBodyContent() {
     switch (currentIndex) {
       case 0: return _buildHomeBody();
@@ -52,95 +102,100 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 2. AppBar with Clickable Address Section
   PreferredSizeWidget _buildHomeAppBar() {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      surfaceTintColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
       toolbarHeight: 72,
-      titleSpacing: 16,
       title: InkWell(
-        onTap: () {
-          // TODO: Navigate to Address Page
-           Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen()));
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.location_on, color: Colors.black, size: 18),
-                  SizedBox(width: 4),
-                  Text(
-                    "Home",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black),
-                ],
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                "Keyur Apartment, Ahmedabad",
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen())),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_on, color: Colors.black, size: 18),
+                SizedBox(width: 4),
+                Text("Home", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
+                Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black),
+              ],
+            ),
+            Text("Keyur Apartment, Ahmedabad", style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
         ),
       ),
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () {},
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
         ),
       ],
     );
   }
 
-  /// 3. Main Home Body
   Widget _buildHomeBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-          _buildSearchBar(),
-          _buildSectionHeader("Services"),
-          _buildServicesGrid(),
-          _buildSectionHeader("Upcoming Booking"),
-          _buildUpcomingCard(),
-          _buildSectionHeader("Recommended for you"),
-          _buildRecommendedList(),
-        ],
-      ),
-    );
-  }
-
-  /// 4. Search Bar UI
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SearchBar(
-        hintText: "Search services",
-        leading: const Icon(Icons.search),
-        elevation: const WidgetStatePropertyAll(1),
-        backgroundColor: const WidgetStatePropertyAll(Colors.white),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return RefreshIndicator(
+      onRefresh: _fetchData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            _buildSearchBar(),
+            _buildSectionHeader("Services"),
+            _buildServicesGrid(),
+            _buildSectionHeader("Upcoming Booking"),
+            _buildUpcomingCard(),
+            _buildSectionHeader("Recommended for you"),
+            _buildRecommendedList(),
+          ],
         ),
       ),
     );
   }
 
-  /// 5. Services Grid UI
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: InkWell(
+        onTap: () => showSearch(context: context, delegate: ServiceSearchDelegate(services)),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+            ],
+            border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search, color: Color(0xFF33365D), size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Search for 'Plumbing' or 'AC'...",
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15, letterSpacing: 0.3),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: const Color(0xFF33365D).withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.tune, color: Color(0xFF33365D), size: 18),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildServicesGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -149,29 +204,23 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: services.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisCount: 4, crossAxisSpacing: 12, mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
           final service = services[index];
           return InkWell(
-            borderRadius: BorderRadius.circular(16),
             onTap: () {
               if (service["title"] == "More") {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const AllServicesScreen()));
               } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ServiceProvidersScreen(serviceName: service["title"])),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceProvidersScreen(serviceName: service["title"])));
               }
             },
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -188,67 +237,101 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 6. Upcoming Card UI
   Widget _buildUpcomingCard() {
+    if (_upcomingBooking == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 30),
+              SizedBox(height: 10),
+              Text("No upcoming bookings found", style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final booking = _upcomingBooking!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12)],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.cleaning_services, color: Colors.blue),
-                const SizedBox(width: 10),
-                const Expanded(child: Text("Deep Home Cleaning", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
-                _statusBadge("Confirmed", Colors.green),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              children: [
-                const CircleAvatar(backgroundColor: Color(0xFFE5E7EB), child: Icon(Icons.person, color: Colors.black54)),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Keyur Visavadiya", style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text("Service Provider", style: TextStyle(fontSize: 11, color: Colors.grey)),
-                  ],
-                ),
-                const Spacer(),
-                _iconAction(Icons.call, Colors.green),
-                const SizedBox(width: 8),
-                _iconAction(Icons.message, Colors.blue),
-              ],
-            )
-          ],
+      child: InkWell(
+        // FIXED: Now passing the actual ID from the map instead of 'bId'
+        onTap: () {
+          final String actualID = booking['id'].toString();
+          Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => BookingDetailsUI(bookingId: actualID))
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12)],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.cleaning_services, color: Colors.blue),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(booking['service_name'] ?? "Service", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+                  _statusBadge(booking['status'] ?? "Confirmed", Colors.green),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    backgroundImage: NetworkImage("$_baseUrl${booking['provider_photo'] ?? ''}"),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(booking['provider_name'] ?? "Provider", style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(booking['booking_date'] ?? "Scheduled", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                  const Spacer(),
+                  _iconAction(Icons.call, Colors.green),
+                  const SizedBox(width: 8),
+                  _iconAction(Icons.message, Colors.blue),
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// 7. Recommended List (NOW CLICKABLE)
   Widget _buildRecommendedList() {
+    if (_isLoading) return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+
     return SizedBox(
       height: 170,
       child: ListView.builder(
         padding: const EdgeInsets.only(left: 20),
         scrollDirection: Axis.horizontal,
-        itemCount: 5,
+        itemCount: _dbProviders.length,
         itemBuilder: (context, index) {
+          final item = _dbProviders[index];
           return InkWell(
-            borderRadius: BorderRadius.circular(18),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ServiceProvidersScreen(serviceName: "Recommended")),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceProviderDetailScreen(provider: item)));
             },
             child: Container(
               width: 150,
@@ -256,26 +339,26 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10)],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 90,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE5E7EB),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: Image.network(
+                      "$_baseUrl${item['photo'] ?? ''}",
+                      height: 90, width: 150, fit: BoxFit.cover,
+                      errorBuilder: (c,e,s) => Container(height: 90, color: Colors.grey.shade200, child: const Icon(Icons.image)),
                     ),
-                    child: const Center(child: Icon(Icons.image, color: Colors.white54, size: 30)),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Text("Service Name", style: TextStyle(fontWeight: FontWeight.w600)),
+                  Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(item['name'] ?? 'Provider', style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text("Top rated provider", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(item['title'] ?? 'Professional', style: const TextStyle(fontSize: 11, color: Colors.grey))
                   ),
                 ],
               ),
@@ -286,12 +369,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 8. Bottom Navigation Bar
   Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: BottomNavigationBar(
@@ -312,26 +394,163 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Helper Widgets
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 12),
-      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  Widget _buildSectionHeader(String title) => Padding(padding: const EdgeInsets.fromLTRB(20, 30, 20, 12), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)));
+  Widget _statusBadge(String label, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)));
+  Widget _iconAction(IconData icon, Color color) => Container(decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: IconButton(icon: Icon(icon, color: color, size: 20), onPressed: () {}));
+}
+
+// ServiceSearchDelegate remains as you have it...
+// ... Search Delegate Code ...
+// Service Search Delegate
+class ServiceSearchDelegate extends SearchDelegate {
+  final List<Map<String, dynamic>> services;
+
+  ServiceSearchDelegate(this.services);
+
+  @override
+  String get searchFieldLabel => 'Search services...';
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    return Theme.of(context).copyWith(
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: Colors.black87),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        hintStyle: TextStyle(color: Colors.grey, fontSize: 16),
+        border: InputBorder.none,
+      ),
     );
   }
 
-  Widget _statusBadge(String label, Color color) {
+  @override
+  List<Widget>? buildActions(BuildContext context) =>
+      [
+        if (query.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.clear, color: Colors.grey),
+            onPressed: () => query = '',
+          ),
+      ];
+
+  @override
+  Widget? buildLeading(BuildContext context) =>
+      IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+        onPressed: () => close(context, null),
+      );
+
+  @override
+  Widget buildResults(BuildContext context) => _buildSearchBody(context);
+
+  @override
+  Widget buildSuggestions(BuildContext context) => _buildSearchBody(context);
+
+  Widget _buildSearchBody(BuildContext context) {
+    // Filters the list based on query and hides the "More" button from results
+    final results = services
+        .where((s) =>
+    s["title"].toLowerCase().contains(query.toLowerCase()) &&
+        s["title"] != "More")
+        .toList();
+
+    if (query.isEmpty) {
+      return Container(
+        color: const Color(0xFFF6F7F9),
+        child: const Center(
+          child: Text("Start typing to find services...",
+              style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+      color: const Color(0xFFF6F7F9),
+      child: results.isEmpty
+          ? const Center(child: Text(
+          "No services found", style: TextStyle(color: Colors.grey)))
+          : ListView.separated(
+        padding: const EdgeInsets.all(20),
+        itemCount: results.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final service = results[index];
+          return _buildSearchListTile(context, service);
+        },
+      ),
     );
   }
 
-  Widget _iconAction(IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-      child: IconButton(icon: Icon(icon, color: color, size: 20), onPressed: () {}),
+  Widget _buildSearchListTile(BuildContext context,
+      Map<String, dynamic> service) {
+    return InkWell(
+      onTap: () {
+        close(context, null);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ServiceProvidersScreen(serviceName: service["title"]),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            // Modern Compact Icon Container
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF33365D).withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                  service["icon"], color: const Color(0xFF33365D), size: 22),
+            ),
+            const SizedBox(width: 16),
+            // Text Information
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service["title"],
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    "Available in your area",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+                Icons.arrow_forward_ios, size: 14, color: Colors.black26),
+          ],
+        ),
+      ),
     );
   }
 }

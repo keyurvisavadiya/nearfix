@@ -14,7 +14,6 @@ class AddressScreen extends StatefulWidget {
 class _AddressScreenState extends State<AddressScreen> {
   int selectedAddressIndex = 0;
   List<Map<String, dynamic>> addresses = [];
-
   final Color primaryColor = const Color.fromARGB(255, 51, 54, 93);
 
   @override
@@ -26,37 +25,33 @@ class _AddressScreenState extends State<AddressScreen> {
   Future<void> fetchAddresses() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id');
-
     if (userId == null) return;
 
-    final url =
-        "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
+    final url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
 
-    debugPrint("API URL: $url");
+    try {
+      final response = await http.get(Uri.parse(url));
+      final decoded = jsonDecode(response.body);
 
-    final response = await http.get(Uri.parse(url));
-
-    debugPrint("Response: ${response.body}");
-
-    final decoded = jsonDecode(response.body);
-
-    if (decoded['success'] == true) {
-      setState(() {
-        addresses = List<Map<String, dynamic>>.from(
-          decoded['data'].map((addr) => {
-            "title": addr['type'],
-            "address": "${addr['house']}, ${addr['area']}",
-            "icon": addr['type'] == "Home"
-                ? Icons.home_rounded
-                : addr['type'] == "Work"
-                ? Icons.work_rounded
-                : Icons.location_on_rounded,
-          }),
-        );
-      });
+      if (decoded['success'] == true) {
+        setState(() {
+          addresses = List<Map<String, dynamic>>.from(
+            decoded['data'].map((addr) => {
+              "title": addr['type'],
+              "address": "${addr['house']}, ${addr['area']}",
+              "icon": addr['type'] == "Home"
+                  ? Icons.home_rounded
+                  : addr['type'] == "Work"
+                  ? Icons.work_rounded
+                  : Icons.location_on_rounded,
+            }),
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching addresses: $e");
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -86,8 +81,7 @@ class _AddressScreenState extends State<AddressScreen> {
                 bool isSelected = selectedAddressIndex == index;
 
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => selectedAddressIndex = index),
+                  onTap: () => setState(() => selectedAddressIndex = index),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
@@ -95,9 +89,7 @@ class _AddressScreenState extends State<AddressScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected
-                            ? primaryColor
-                            : Colors.transparent,
+                        color: isSelected ? primaryColor : Colors.transparent,
                         width: 2,
                       ),
                       boxShadow: [
@@ -108,32 +100,24 @@ class _AddressScreenState extends State<AddressScreen> {
                       ],
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
                           addresses[index]["icon"],
-                          color: isSelected
-                              ? primaryColor
-                              : Colors.grey,
+                          color: isSelected ? primaryColor : Colors.grey,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 addresses[index]["title"],
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 addresses[index]["address"],
-                                style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 13),
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                               ),
                             ],
                           ),
@@ -146,21 +130,17 @@ class _AddressScreenState extends State<AddressScreen> {
             ),
           ),
 
-          /// ADD ADDRESS
+          /// RESTORED: ADD ADDRESS BUTTON
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: OutlinedButton.icon(
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const AddAddressFormScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AddAddressFormScreen()),
                 );
-
                 if (result == true) {
-                  fetchAddresses(); // reload from DB
+                  fetchAddresses(); // reload from DB if new address added
                 }
               },
               icon: const Icon(Icons.add),
@@ -169,29 +149,29 @@ class _AddressScreenState extends State<AddressScreen> {
                 minimumSize: const Size(double.infinity, 55),
                 foregroundColor: primaryColor,
                 side: BorderSide(color: primaryColor, width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
 
-
+          /// CONFIRM ADDRESS BUTTON
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
             child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (addresses.isNotEmpty) {
+                  // Returns address to ScheduleServiceScreen
+                  Navigator.pop(context, addresses[selectedAddressIndex]["address"]);
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: const Text(
                 "Confirm Address",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -38,20 +38,6 @@ class ChatScreen extends StatelessWidget {
             color: Colors.black,
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black12),
-              ),
-              child: const Icon(Icons.edit, size: 18, color: Colors.black),
-            ),
-          ),
-        ],
       ),
 
       /* ---------- BODY ---------- */

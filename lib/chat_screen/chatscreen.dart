@@ -68,16 +68,6 @@ class ProviderChatMessageScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 2),
-              Row(
-                children: [
-                  CircleAvatar(radius: 4, backgroundColor: Colors.green),
-                  SizedBox(width: 6),
-                  Text(
-                    "Online",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
             ],
           ),
         ],

@@ -115,10 +115,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 const SizedBox(height: 32),
 
-                _buildInput("FULL NAME", "John Doe", Icons.person_outline, _nameController,
+                _buildInput("FULL NAME", "test case", Icons.person_outline, _nameController,
                     validator: (v) => (v == null || v.isEmpty) ? "Name is required" : null),
 
-                _buildInput("EMAIL ADDRESS", "john@example.com", Icons.email_outlined, _emailController,
+                _buildInput("EMAIL ADDRESS", "test123@example.com", Icons.email_outlined, _emailController,
                     validator: (v) => (v != null && v.contains('@')) ? null : "Enter a valid email"),
 
                 _buildInput("PHONE NUMBER", "1234567890", Icons.phone_android_outlined, _phoneController,

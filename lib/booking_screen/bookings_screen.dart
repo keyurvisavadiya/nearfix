@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nearfix/booking_screen/booking_screen_details.dart';
+import 'package:nearfix/service_provider_detail/service_provider_detail.dart';
 
 const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
 
@@ -12,6 +13,142 @@ class BookingsScreen extends StatefulWidget {
 
 class _BookingsScreenState extends State<BookingsScreen> {
   bool isUpcoming = true;
+
+  // ---------------- STAR RATING SNACKBAR ----------------
+  void _showRatingSnackbar(String serviceTitle) {
+    int selectedRating = 0;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 6),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: Colors.grey.shade200),
+        ),
+        elevation: 8,
+        content: StatefulBuilder(
+          builder: (context, setSnackState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Rate $serviceTitle",
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "How was your experience?",
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 5 stars
+                    Row(
+                      children: List.generate(5, (index) {
+                        final star = index + 1;
+                        return GestureDetector(
+                          onTap: () {
+                            setSnackState(() => selectedRating = star);
+                            // After short delay, dismiss and show confirmation
+                            Future.delayed(
+                              const Duration(milliseconds: 600),
+                              () {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.amber,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          "You rated $star/5 — Thank you!",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: primaryBtnColor,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    margin: const EdgeInsets.all(16),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              star <= selectedRating
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: Colors.amber,
+                              size: 30,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    // label
+                    Text(
+                      selectedRating == 0
+                          ? "Tap a star"
+                          : _ratingLabel(selectedRating),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: selectedRating == 0
+                            ? Colors.grey
+                            : primaryBtnColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  String _ratingLabel(int rating) {
+    switch (rating) {
+      case 1:
+        return "Poor 😞";
+      case 2:
+        return "Fair 😐";
+      case 3:
+        return "Good 🙂";
+      case 4:
+        return "Great 😊";
+      case 5:
+        return "Excellent 🤩";
+      default:
+        return "";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +165,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
               _tabSwitcher(),
               const SizedBox(height: 16),
-
               Expanded(
                 child: ListView(
                   children: isUpcoming
@@ -104,7 +239,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
       onPrimaryTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const BookingDetailsUI()),
+          MaterialPageRoute(builder: (_) => const BookingDetailsUI(bookingId: '',)),
         );
       },
     ),
@@ -117,21 +252,15 @@ class _BookingsScreenState extends State<BookingsScreen> {
       statusColor: Colors.green,
       date: "Today",
       time: "2:00 PM",
-      primaryButton: "Track Pro",
-      secondaryButton: "Cancel",
+      primaryButton: "View Details",
+      onPrimaryTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BookingDetailsUI(bookingId: '',)),
+        );
+      },
     ),
     const SizedBox(height: 12),
-    bookingCard(
-      icon: Icons.cleaning_services,
-      title: "Deep Cleaning",
-      ref: "Ref: #77710",
-      status: "CONFIRMED",
-      statusColor: Colors.green,
-      date: "Today",
-      time: "2:00 PM",
-      primaryButton: "Track Pro",
-      secondaryButton: "Cancel",
-    ),
   ];
 
   // ---------------- HISTORY ----------------
@@ -144,8 +273,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
       statusColor: Colors.grey,
       date: "Jan 15, 2026",
       price: "₹450.00",
-      primaryButton: "Rate",
-      secondaryButton: "Rebook",
+      primaryButton: "Rebook",
+      secondaryButton: "Rate",
+      onPrimaryTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ServiceProviderDetailScreen(provider: {},),
+          ),
+        );
+      },
+      onSecondaryTap: () => _showRatingSnackbar("AC Repair"),
     ),
     const SizedBox(height: 12),
     bookingCard(
@@ -156,6 +294,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
       statusColor: Colors.red,
       date: "Dec 20, 2025",
       primaryButton: "Book Again",
+      onPrimaryTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ServiceProviderDetailScreen(provider: {},),
+          ),
+        );
+      },
     ),
   ];
 
@@ -172,6 +318,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     required String primaryButton,
     String? secondaryButton,
     VoidCallback? onPrimaryTap,
+    VoidCallback? onSecondaryTap,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -183,7 +330,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
           const SizedBox(height: 14),
           _cardDateRow(date, time, price),
           const SizedBox(height: 16),
-          _cardButtons(primaryButton, secondaryButton, onPrimaryTap),
+          _cardButtons(
+            primaryButton,
+            secondaryButton,
+            onPrimaryTap,
+            onSecondaryTap,
+          ),
         ],
       ),
     );
@@ -194,7 +346,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     color: Colors.white,
     borderRadius: BorderRadius.circular(14),
     boxShadow: [
-      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
     ],
   );
 
@@ -212,7 +364,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
           height: 42,
           width: 42,
           decoration: BoxDecoration(
-            color: primaryBtnColor.withValues(alpha: 0.1),
+            color: primaryBtnColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: primaryBtnColor),
@@ -246,7 +398,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -280,6 +432,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     String primary,
     String? secondary,
     VoidCallback? onPrimaryTap,
+    VoidCallback? onSecondaryTap,
   ) {
     return Row(
       children: [
@@ -292,8 +445,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
               ),
             ),
             onPressed: onPrimaryTap ?? () {},
-
-            child: Text(primary, style: TextStyle(color: Colors.white)),
+            child: Text(primary, style: const TextStyle(color: Colors.white)),
           ),
         ),
         if (secondary != null) ...[
@@ -307,7 +459,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              onPressed: () {},
+              onPressed: onSecondaryTap ?? () {},
               child: Text(secondary),
             ),
           ),
