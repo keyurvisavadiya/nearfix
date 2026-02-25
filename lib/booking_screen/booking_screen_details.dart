@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:nearfix/chat_screen/chatscreen.dart';
+import 'package:nearfix/chat_screen/chatscreen.dart'; // Make sure this contains ProviderChatMessageScreen
+import 'package:shared_preferences/shared_preferences.dart';
 
 const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
 const Color pageBg = Color(0xFFF6F7FB);
@@ -154,15 +155,15 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
         padding: EdgeInsets.symmetric(horizontal: w * 0.05, vertical: 16),
         child: Column(
           children: [
-            _statusCard(bookingData!['status'], widget.bookingId),
+            _statusCard(bookingData!['status'] ?? "Confirmed", widget.bookingId),
             const SizedBox(height: 20),
-            _serviceCard(bookingData!['service_name'], bookingData!['booking_date']),
+            _serviceCard(bookingData!['service_name'] ?? "Service", bookingData!['booking_date'] ?? ""),
             const SizedBox(height: 20),
             _professionalCard(bookingData!['provider_name'] ?? "Professional"),
             const SizedBox(height: 20),
             _paymentCard(bookingData!['payment_id'], bookingData!['amount']),
             const SizedBox(height: 20),
-            _locationCard(bookingData!['address']),
+            _locationCard(bookingData!['address'] ?? "No address"),
             const SizedBox(height: 28),
             _cancelButton(context),
           ],
@@ -216,7 +217,15 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       subtitle: const Text("Verified Provider"),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [_CircleIcon(Icons.chat), SizedBox(width: 10), _CircleIcon(Icons.call)],
+        children: [
+          _CircleIcon(
+            Icons.chat,
+            providerId: int.tryParse(bookingData!['provider_id'].toString()),
+            providerName: pName,
+          ),
+          const SizedBox(width: 10),
+          const _CircleIcon(Icons.call),
+        ],
       ),
     ));
   }
@@ -293,12 +302,44 @@ class _PaymentRow extends StatelessWidget {
 
 class _CircleIcon extends StatelessWidget {
   final IconData icon;
-  const _CircleIcon(this.icon);
+  final int? providerId;
+  final String? providerName;
+
+  const _CircleIcon(this.icon, {this.providerId, this.providerName});
+
+  Future<void> _navigateToChat(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final int myUserId = prefs.getInt('user_id') ?? 1;
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProviderChatMessageScreen(
+            currentUserId: myUserId,
+            peerId: providerId ?? 0,
+            peerName: providerName ?? "Provider",
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderChatMessageScreen())),
-      child: CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade100, child: Icon(icon, size: 18, color: primaryBtnColor)),
+      onTap: () {
+        if (icon == Icons.chat && providerId != null) {
+          _navigateToChat(context);
+        } else if (icon == Icons.call) {
+          debugPrint("Call feature not implemented");
+        }
+      },
+      child: CircleAvatar(
+        radius: 18,
+        backgroundColor: Colors.grey.shade100,
+        child: Icon(icon, size: 18, color: primaryBtnColor),
+      ),
     );
   }
 }

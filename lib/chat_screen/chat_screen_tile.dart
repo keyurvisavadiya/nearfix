@@ -1,96 +1,136 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:nearfix/chat_screen/chatscreen.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'chatscreen.dart'; // Add intl to your pubspec.yaml
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: ChatScreen(),
-    );
-  }
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class ChatScreen extends StatelessWidget {
-  const ChatScreen({super.key});
+class _ChatScreenState extends State<ChatScreen> {
+  List<dynamic> _chatList = [];
+  bool _isLoading = true;
+  int? _currentUserId;
+
+  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndChats();
+  }
+
+  Future<void> _loadUserAndChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Use 'provider_id' if you are logged in as a provider
+    _currentUserId = prefs.getInt('provider_id') ?? prefs.getInt('user_id');
+    _fetchChatList();
+  }
+
+  Future<void> _fetchChatList() async {
+    try {
+      final response = await http.get(
+        Uri.parse("${_baseUrl}get_chat_list.php?user_id=$_currentUserId"),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
+      final decoded = jsonDecode(response.body);
+      if (decoded['success']) {
+        setState(() {
+          _chatList = decoded['data'];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-
-      /* ---------- HEADER ---------- */
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        titleSpacing: 20,
-        title: const Text(
-          "Messages",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Colors.black,
-          ),
-        ),
+        title: const Text("Messages", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
-
-      /* ---------- BODY ---------- */
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: const [
-            ChatCard(
-              name: "Sarah Jenkins",
-              message: "I'm arriving in about 10 minutes, see you soon!",
-              time: "2m ago",
-              isOnline: true,
-            ),
-            SizedBox(height: 14),
-            ChatCard(
-              name: "John Moyer",
-              message: "Thanks for the tip!",
-              time: "Yesterday",
-              isOnline: false,
-              faded: true,
-            ),
-          ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
+          : _chatList.isEmpty
+          ? const Center(child: Text("No messages yet"))
+          : RefreshIndicator(
+        onRefresh: _fetchChatList,
+        child: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: _chatList.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (context, index) {
+            final chat = _chatList[index];
+            return ChatCard(
+              currentUserId: _currentUserId!,
+              peerId: int.parse(chat['contact_id'].toString()),
+              name: chat['contact_name'] ?? "User",
+              message: chat['message'] ?? "",
+              time: chat['created_at'] ?? "",
+              imageUrl: chat['contact_image'],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-/* ================= CHAT CARD ================= */
-
 class ChatCard extends StatelessWidget {
+  final int currentUserId;
+  final int peerId;
   final String name;
   final String message;
   final String time;
-  final bool isOnline;
-  final bool faded;
+  final String? imageUrl;
 
   const ChatCard({
     super.key,
+    required this.currentUserId,
+    required this.peerId,
     required this.name,
     required this.message,
     required this.time,
-    required this.isOnline,
-    this.faded = false,
+    this.imageUrl,
   });
+
+  String _formatTime(String rawDate) {
+    if (rawDate.isEmpty) return "";
+    try {
+      DateTime dt = DateTime.parse(rawDate);
+      return DateFormat('hh:mm a').format(dt); // Displays as 09:40 PM
+    } catch (e) {
+      return "";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    String fullImageUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/$imageUrl";
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ProviderChatMessageScreen()),
+          MaterialPageRoute(
+            builder: (context) => ProviderChatMessageScreen(
+              currentUserId: currentUserId,
+              peerId: peerId,
+              peerName: name,
+              peerImageUrl: fullImageUrl,
+            ),
+          ),
         );
       },
       child: Container(
@@ -99,79 +139,35 @@ class ChatCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
-            /* ----- AVATAR ----- */
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.grey.shade200,
-                  child: Icon(Icons.person, color: Colors.grey.shade500),
-                ),
-                if (isOnline)
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: const Color(0xFF8B5CF6).withOpacity(0.1),
+              backgroundImage: (imageUrl != null && imageUrl!.isNotEmpty)
+                  ? NetworkImage(fullImageUrl)
+                  : null,
+              child: (imageUrl == null || imageUrl!.isEmpty)
+                  ? Text(name[0], style: const TextStyle(color: Color(0xFF8B5CF6)))
+                  : null,
             ),
-
             const SizedBox(width: 12),
-
-            /* ----- TEXT ----- */
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        time,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text(_formatTime(time), style: const TextStyle(fontSize: 11, color: Colors.grey)),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    message,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: faded
-                          ? Colors.grey.shade400
-                          : Colors.grey.shade600,
-                    ),
-                  ),
+                  Text(message, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600)),
                 ],
               ),
             ),
