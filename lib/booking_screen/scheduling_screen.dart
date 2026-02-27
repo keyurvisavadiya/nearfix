@@ -111,7 +111,7 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: const Text("Booking Confirmed!", textAlign: TextAlign.center),
+        content: const Text("Booking Requested!", textAlign: TextAlign.center),
         actions: [
           TextButton(
               onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),

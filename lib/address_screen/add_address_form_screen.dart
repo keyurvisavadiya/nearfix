@@ -17,6 +17,7 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
   final TextEditingController _houseController = TextEditingController();
   final TextEditingController _areaController = TextEditingController();
   final TextEditingController _landmarkController = TextEditingController();
+  final TextEditingController _pincodeController = TextEditingController();
 
   String selectedType = "Home";
   bool isLoading = false;
@@ -28,6 +29,7 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
     _houseController.dispose();
     _areaController.dispose();
     _landmarkController.dispose();
+    _pincodeController.dispose();
     super.dispose();
   }
 
@@ -61,6 +63,7 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
           "house": _houseController.text.trim(),
           "area": _areaController.text.trim(),
           "landmark": _landmarkController.text.trim(),
+          "pincode": _pincodeController.text.trim(),
           "type": selectedType,
         },
       );
@@ -124,7 +127,10 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
                     const SizedBox(height: 20),
                     _label("Landmark (Optional)", false),
                     _field(_landmarkController, "Near mall", null),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
+                    _label("Pincode", true),
+                    _field(_pincodeController, "e.g. 380015", "Required", keyboardType: TextInputType.number),
+                    const SizedBox(height: 20),
                     _label("Save As", true),
                     const SizedBox(height: 12),
                     _typeSelector(),
@@ -148,11 +154,12 @@ class _AddAddressFormScreenState extends State<AddAddressFormScreen> {
     );
   }
 
-  Widget _field(TextEditingController c, String hint, String? err) {
+  Widget _field(TextEditingController c, String hint, String? err, {TextInputType keyboardType = TextInputType.text}) {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       child: TextFormField(
         controller: c,
+        keyboardType: keyboardType, // Supports number pad
         validator: (v) => (err != null && (v == null || v.isEmpty)) ? err : null,
         decoration: InputDecoration(
           hintText: hint,
