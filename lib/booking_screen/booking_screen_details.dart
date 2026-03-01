@@ -19,6 +19,9 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   Map<String, dynamic>? bookingData;
   bool isLoading = true;
 
+  // IMPORTANT: Update this to your current Ngrok URL
+  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+
   @override
   void initState() {
     super.initState();
@@ -26,7 +29,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   }
 
   Future<void> _fetchBookingDetails() async {
-    final url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/get_booking_details.php?booking_id=${widget.bookingId}";
+    final url = "${_baseUrl}get_booking_details.php?booking_id=${widget.bookingId}";
     try {
       final response = await http.get(Uri.parse(url), headers: {"ngrok-skip-browser-warning": "true"});
       final decoded = jsonDecode(response.body);
@@ -47,7 +50,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   Widget build(BuildContext context) {
     if (isLoading) return const Scaffold(backgroundColor: pageBg, body: Center(child: CircularProgressIndicator(color: primaryBtnColor)));
 
-    // Pure logic update only: Map the status string for the UI
     final String rawStatus = (bookingData?['status'] ?? "Pending").toString();
     final bool canCancel = rawStatus.toLowerCase() == 'confirmed' || rawStatus.toLowerCase() == 'pending';
 
@@ -80,64 +82,37 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     );
   }
 
-  Widget _statusCard(String status, String id) {
-    // Back to your original dual-color logic
-    bool isCancelled = status.toLowerCase() == 'cancelled';
-    bool isCompleted = status.toLowerCase() == 'completed';
+  Widget _professionalCard(String pName) {
+    // 1. Get the path from the database key
+    String? photoPath = bookingData!['profile_photo_path'];
+    String? fullImageUrl;
 
-    Color statusColor = Colors.green;
-    IconData statusIcon = Icons.check_circle;
-
-    if (isCancelled) {
-      statusColor = Colors.red;
-      statusIcon = Icons.cancel;
-    } else if (isCompleted) {
-      statusColor = Colors.blue;
-      statusIcon = Icons.verified;
-    } else if (status.toLowerCase() == 'pending') {
-      statusColor = Colors.amber;
-      statusIcon = Icons.access_time_filled;
+    // 2. Build the full URL
+    if (photoPath != null && photoPath.toString().isNotEmpty) {
+      String cleanPath = photoPath.toString().startsWith('/')
+          ? photoPath.toString().substring(1)
+          : photoPath.toString();
+      fullImageUrl = "$_baseUrl$cleanPath";
     }
 
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Icon(statusIcon, color: statusColor, size: 40),
-          const SizedBox(height: 12),
-          Text("Booking $status", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text("Reference: #$id", style: const TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-
-  Widget _serviceCard(String name, String date) {
-    return _section("SERVICE", ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-          backgroundColor: primaryBtnColor.withOpacity(0.1),
-          child: Icon(_getServiceIcon(name), color: primaryBtnColor)
-      ),
-      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(date),
-    ));
-  }
-
-  Widget _professionalCard(String pName) {
     return _section("PROFESSIONAL", ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: const CircleAvatar(child: Icon(Icons.person)),
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey.shade200,
+        backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+        child: fullImageUrl == null ? const Icon(Icons.person, color: Colors.grey) : null,
+      ),
       title: Text(pName, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: const Text("Verified Provider"),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _CircleIcon(Icons.chat, pId: bookingData!['provider_id'], pName: pName),
+          _CircleIcon(
+              Icons.chat,
+              pId: bookingData!['provider_id'],
+              pName: pName,
+              pImageUrl: fullImageUrl // 3. Pass it to the icon
+          ),
           const SizedBox(width: 8),
           const _CircleIcon(Icons.call),
         ],
@@ -145,63 +120,65 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     ));
   }
 
-  Widget _paymentCard(String? payId, dynamic amount) {
-    return _section("PAYMENT DETAILS", Column(
-      children: [
-        _row("Transaction ID", (payId == null || payId.isEmpty) ? "Pending" : payId),
-        _row("Total Amount", "₹$amount", isBold: true),
-      ],
-    ));
-  }
+  Widget _statusCard(String status, String id) {
+    bool isCancelled = status.toLowerCase() == 'cancelled';
+    bool isCompleted = status.toLowerCase() == 'completed';
+    Color statusColor = isCancelled ? Colors.red : (isCompleted ? Colors.blue : (status.toLowerCase() == 'pending' ? Colors.amber : Colors.green));
+    IconData statusIcon = isCancelled ? Icons.cancel : (isCompleted ? Icons.verified : (status.toLowerCase() == 'pending' ? Icons.access_time_filled : Icons.check_circle));
 
-  Widget _locationCard(String address) {
-    return _section("LOCATION", ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.location_on, color: Colors.red),
-      title: Text(address, style: const TextStyle(fontSize: 14)),
-    ));
-  }
-
-  Widget _cancelButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red,
-          side: const BorderSide(color: Colors.red),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        onPressed: () {},
-        child: const Text("Cancel Booking", style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-
-  Widget _section(String title, Widget child) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-        const SizedBox(height: 10),
-        child,
+      width: double.infinity, padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+      child: Column(children: [
+        Icon(statusIcon, color: statusColor, size: 40),
+        const SizedBox(height: 12),
+        Text("Booking $status", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text("Reference: #$id", style: const TextStyle(color: Colors.grey)),
       ]),
     );
   }
 
-  Widget _row(String label, String value, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.black87)),
-          Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal))
-        ],
-      ),
-    );
-  }
+  Widget _serviceCard(String name, String date) => _section("SERVICE", ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: CircleAvatar(backgroundColor: primaryBtnColor.withOpacity(0.1), child: Icon(_getServiceIcon(name), color: primaryBtnColor)),
+    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+    subtitle: Text(date),
+  ));
+
+  Widget _paymentCard(String? payId, dynamic amount) => _section("PAYMENT DETAILS", Column(children: [
+    _row("Transaction ID", (payId == null || payId.isEmpty) ? "Pending" : payId),
+    _row("Total Amount", "₹$amount", isBold: true),
+  ]));
+
+  Widget _locationCard(String address) => _section("LOCATION", ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: const Icon(Icons.location_on, color: Colors.red),
+    title: Text(address, style: const TextStyle(fontSize: 14)),
+  ));
+
+  Widget _cancelButton(BuildContext context) => SizedBox(width: double.infinity, child: OutlinedButton(
+    style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+    onPressed: () {},
+    child: const Text("Cancel Booking", style: TextStyle(fontWeight: FontWeight.bold)),
+  ));
+
+  Widget _section(String title, Widget child) => Container(
+    padding: const EdgeInsets.all(16), margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+      const SizedBox(height: 10),
+      child,
+    ]),
+  );
+
+  Widget _row(String label, String value, {bool isBold = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: const TextStyle(color: Colors.black87)),
+      Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal))
+    ]),
+  );
 
   IconData _getServiceIcon(String service) {
     final s = service.toLowerCase();
@@ -216,14 +193,30 @@ class _CircleIcon extends StatelessWidget {
   final IconData icon;
   final dynamic pId;
   final String? pName;
-  const _CircleIcon(this.icon, {this.pId, this.pName});
+  final String? pImageUrl;
+
+  const _CircleIcon(this.icon, {this.pId, this.pName, this.pImageUrl});
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
-        radius: 18,
-        backgroundColor: Colors.grey.shade100,
-        child: Icon(icon, size: 18, color: primaryBtnColor)
+    return GestureDetector(
+      onTap: () async {
+        if (icon == Icons.chat && pId != null) {
+          final prefs = await SharedPreferences.getInstance();
+          final int myId = prefs.getInt('user_id') ?? 1;
+          final int? peerId = int.tryParse(pId.toString());
+
+          if (peerId != null && context.mounted) {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderChatMessageScreen(
+              currentUserId: myId,
+              peerId: peerId,
+              peerName: pName ?? "Provider",
+              peerImageUrl: pImageUrl, // Passes URL to Chat
+            )));
+          }
+        }
+      },
+      child: CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade100, child: Icon(icon, size: 18, color: primaryBtnColor)),
     );
   }
 }

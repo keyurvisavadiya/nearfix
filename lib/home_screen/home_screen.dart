@@ -399,8 +399,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _iconAction(IconData icon, Color color) => Container(decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: IconButton(icon: Icon(icon, color: color, size: 20), onPressed: () {}));
 }
 
-// ServiceSearchDelegate remains as you have it...
-// ... Search Delegate Code ...
 // Service Search Delegate
 class ServiceSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> services;
