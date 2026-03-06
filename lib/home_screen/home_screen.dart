@@ -40,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {"icon": Icons.local_laundry_service, "title": "Laundry"},
     {"icon": Icons.more_horiz, "title": "More"},
   ];
+  
 
   @override
   void initState() {
