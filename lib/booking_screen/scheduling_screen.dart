@@ -8,12 +8,14 @@ import 'package:nearfix/payment_screen/ghost_payment_screen.dart';
 
 class ScheduleServiceScreen extends StatefulWidget {
   final String serviceName;
-  final String providerId; // Receives the ID from Detail Screen
+  final String providerId;
+  final String visitingCharge; // <--- 1. ADD THIS PARAMETER
 
   const ScheduleServiceScreen({
     super.key,
     required this.serviceName,
     required this.providerId,
+    required this.visitingCharge, // <--- 2. ADD THIS TO CONSTRUCTOR
   });
 
   @override
@@ -49,27 +51,30 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
 
     if (pickedAddress == null) return;
 
+    // --- 3. PASS THE DYNAMIC AMOUNT TO PAYMENT SCREEN ---
+    // Converting visitingCharge string to double
+    double amountToPay = double.tryParse(widget.visitingCharge) ?? 0.0;
+
     final String? paymentId = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GhostPaymentScreen(amount: 25.0, serviceName: widget.serviceName),
+        builder: (context) => GhostPaymentScreen(
+            amount: amountToPay, // Dynamic amount!
+            serviceName: widget.serviceName
+        ),
       ),
     );
 
     if (paymentId != null) {
-      _saveBookingToDB(paymentId, pickedAddress);
+      _saveBookingToDB(paymentId, pickedAddress, amountToPay.toString());
     }
   }
 
-  Future<void> _saveBookingToDB(String payId, String address) async {
+  Future<void> _saveBookingToDB(String payId, String address, String finalAmount) async {
     setState(() => isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
-    // Getting the userId saved during Login
     final userId = prefs.getInt('user_id');
-
-    // Debugging logs to console - remove these once it works
-    print("DEBUG: UserID: $userId, ProviderID: ${widget.providerId}, PayID: $payId");
 
     const String url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/schedule_service.php";
 
@@ -78,14 +83,14 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
         Uri.parse(url),
         headers: {"ngrok-skip-browser-warning": "true"},
         body: {
-          "user_id": userId?.toString() ?? "", // Send empty string if null to trigger PHP error
-          "provider_id": widget.providerId,    // Passing the ID from the widget
+          "user_id": userId?.toString() ?? "",
+          "provider_id": widget.providerId,
           "service_name": widget.serviceName,
           "booking_date": DateFormat('yyyy-MM-dd').format(selectedDate!),
           "notes": _notesController.text.trim(),
           "address": address,
           "payment_id": payId,
-          "amount": "25.0",
+          "amount": finalAmount, // --- 4. SAVE THE REAL AMOUNT ---
         },
       );
 
@@ -93,7 +98,6 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
       if (result['success'] == true) {
         _showSuccessDialog();
       } else {
-        // This will now show you exactly which ID is missing
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${result['message']}")),
         );
@@ -105,6 +109,7 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
     }
   }
 
+  // ... rest of your UI code (_showSuccessDialog, build, etc.)
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -126,7 +131,16 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(title: Text("Schedule ${widget.serviceName}")),
+      appBar: AppBar(
+        title: Text("Schedule ${widget.serviceName}"),
+        // Display the price in the AppBar for transparency
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Center(child: Text("₹${widget.visitingCharge}", style: const TextStyle(fontWeight: FontWeight.bold))),
+          )
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -140,18 +154,25 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
             const SizedBox(height: 24),
             TextField(
                 controller: _notesController,
-                decoration: const InputDecoration(hintText: "Additional Notes", border: OutlineInputBorder())
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: "Additional Notes (e.g., gate code, specific problem)",
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Color(0xFFF9FAFB),
+                )
             ),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: isLoading ? null : _startBookingProcess,
               style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  minimumSize: const Size(double.infinity, 56)
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
               ),
               child: isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Select Address & Pay", style: TextStyle(color: Colors.white)),
+                  : Text("Pay ₹${widget.visitingCharge} & Book", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             )
           ],
         ),
@@ -161,10 +182,15 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
 
   Widget _selectionCard({required String title, required String value, required IconData icon, required VoidCallback onTap}) {
     return ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: Colors.grey.shade100,
-        title: Text(title),
-        subtitle: Text(value),
-        leading: Icon(icon, color: primaryColor),
+        title: Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: primaryColor),
+        ),
         onTap: onTap
     );
   }
