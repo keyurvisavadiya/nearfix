@@ -130,6 +130,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           child: const Text("View Details", style: TextStyle(color: primaryBtnColor, fontWeight: FontWeight.bold)),
                         )
                             : null,
+
                       );
                     },
                   ),
