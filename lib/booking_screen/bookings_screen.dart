@@ -48,7 +48,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
   List<dynamic> get _filteredBookings {
     return allBookings.where((b) {
       final String s = (b['status'] ?? '').toString().toLowerCase().trim();
-      // Logic for filtering tabs
       if (isUpcoming) {
         return s == 'pending' || s == 'confirmed' || s == '';
       } else {
@@ -58,13 +57,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
   }
 
   Color _getStatusColor(String s) {
-    // Original color logic with new statuses added
     switch (s.toLowerCase()) {
       case 'confirmed': return Colors.green;
-      case 'completed': return Colors.blue; // Added Blue
+      case 'completed': return Colors.blue;
       case 'cancelled': return Colors.red;
       case 'pending':
-      default: return Colors.amber; // Added Amber for pending
+      default: return Colors.amber;
     }
   }
 
@@ -95,6 +93,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     itemBuilder: (context, index) {
                       final b = _filteredBookings[index];
                       final String status = (b['status'] ?? 'Pending').toString();
+
                       return bookingCard(
                         title: b['service_name'] ?? 'Service',
                         ref: "Ref: #${b['id']}",
@@ -102,10 +101,35 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         statusColor: _getStatusColor(status),
                         date: b['booking_date'] ?? 'TBD',
                         price: "₹${b['amount']}",
-                        primaryButton: isUpcoming ? "View Details" : (status.toLowerCase() == 'completed' ? "Rate Service" : "Rebook"),
+
+                        // Main Button: "View Details" (Upcoming) or "Rate/Rebook" (History)
+                        primaryButton: isUpcoming
+                            ? "View Details"
+                            : (status.toLowerCase() == 'completed' ? "Rate Service" : "Rebook"),
+
                         onPrimaryTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => BookingDetailsUI(bookingId: b['id'].toString())));
+                          if (isUpcoming || status.toLowerCase() != 'completed') {
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => BookingDetailsUI(bookingId: b['id'].toString())));
+                          } else {
+                            // Logic for Rating
+                            debugPrint("Rating service for booking: ${b['id']}");
+                          }
                         },
+
+                        // --- THE REBOOK BUTTON (Optional) ---
+                        secondaryButton: (!isUpcoming && status.toLowerCase() == 'completed')
+                            ? OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: primaryBtnColor),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () {
+                            debugPrint("Rebooking ${b['service_name']}");
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => BookingDetailsUI(bookingId: b['id'].toString())));
+                          },
+                          child: const Text("View Details", style: TextStyle(color: primaryBtnColor, fontWeight: FontWeight.bold)),
+                        )
+                            : null,
                       );
                     },
                   ),
@@ -133,7 +157,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return Expanded(child: GestureDetector(onTap: onTap, child: Container(alignment: Alignment.center, decoration: BoxDecoration(color: active ? primaryBtnColor : Colors.transparent, borderRadius: BorderRadius.circular(20)), child: Text(text, style: TextStyle(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)))));
   }
 
-  Widget bookingCard({required String title, required String ref, required String status, required Color statusColor, required String date, required String price, required String primaryButton, VoidCallback? onPrimaryTap}) {
+  Widget bookingCard({
+    required String title,
+    required String ref,
+    required String status,
+    required Color statusColor,
+    required String date,
+    required String price,
+    required String primaryButton,
+    VoidCallback? onPrimaryTap,
+    Widget? secondaryButton, // Added parameter
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
@@ -147,7 +181,26 @@ class _BookingsScreenState extends State<BookingsScreen> {
         const Divider(height: 24),
         Row(children: [const Icon(Icons.calendar_today, size: 14, color: Colors.grey), const SizedBox(width: 6), Text(date, style: const TextStyle(color: Colors.grey)), const Spacer(), Text(price, style: const TextStyle(fontWeight: FontWeight.bold, color: primaryBtnColor))]),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, height: 40, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: primaryBtnColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))), onPressed: onPrimaryTap, child: Text(primaryButton, style: const TextStyle(color: Colors.white)))),
+
+        // --- UPDATED BUTTON ROW ---
+        Row(
+          children: [
+            if (secondaryButton != null) ...[
+              Expanded(child: SizedBox(height: 40, child: secondaryButton)),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: primaryBtnColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      onPressed: onPrimaryTap,
+                      child: Text(primaryButton, style: const TextStyle(color: Colors.white))
+                  )
+              ),
+            ),
+          ],
+        ),
       ]),
     );
   }
