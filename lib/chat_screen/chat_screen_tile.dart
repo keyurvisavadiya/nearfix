@@ -18,7 +18,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   int? _currentUserId;
 
-  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+  final String _baseUrl =
+      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {
@@ -58,31 +59,36 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("Messages", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Messages",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+            )
           : _chatList.isEmpty
           ? const Center(child: Text("No messages yet"))
           : RefreshIndicator(
-        onRefresh: _fetchChatList,
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: _chatList.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
-          itemBuilder: (context, index) {
-            final chat = _chatList[index];
-            return ChatCard(
-              currentUserId: _currentUserId!,
-              peerId: int.parse(chat['contact_id'].toString()),
-              name: chat['contact_name'] ?? "User",
-              message: chat['message'] ?? "",
-              time: chat['created_at'] ?? "",
-              imageUrl: chat['contact_image'],
-            );
-          },
-        ),
-      ),
+              onRefresh: _fetchChatList,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: _chatList.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (context, index) {
+                  final chat = _chatList[index];
+                  return ChatCard(
+                    currentUserId: _currentUserId!,
+                    peerId: int.parse(chat['contact_id'].toString()),
+                    name: chat['contact_name'] ?? "User",
+                    message: chat['message'] ?? "",
+                    time: chat['created_at'] ?? "",
+                    imageUrl: chat['contact_image'],
+                  );
+                },
+              ),
+            ),
     );
   }
 }
@@ -117,7 +123,8 @@ class ChatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String fullImageUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/$imageUrl";
+    String fullImageUrl =
+        "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/$imageUrl";
 
     return GestureDetector(
       onTap: () {
@@ -139,7 +146,11 @@ class ChatCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -151,7 +162,10 @@ class ChatCard extends StatelessWidget {
                   ? NetworkImage(fullImageUrl)
                   : null,
               child: (imageUrl == null || imageUrl!.isEmpty)
-                  ? Text(name[0], style: const TextStyle(color: Color(0xFF8B5CF6)))
+                  ? Text(
+                      name[0],
+                      style: const TextStyle(color: Color(0xFF8B5CF6)),
+                    )
                   : null,
             ),
             const SizedBox(width: 12),
@@ -162,12 +176,29 @@ class ChatCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                      Text(_formatTime(time), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _formatTime(time),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(message, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600)),
+                  Text(
+                    message,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 ],
               ),
             ),
