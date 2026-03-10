@@ -23,6 +23,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     "assets/on1.png",
   ];
 
+
+
+
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_seen', true);
