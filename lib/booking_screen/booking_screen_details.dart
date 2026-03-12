@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:nearfix/chat_screen/chatscreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
-const Color pageBg = Color(0xFFF6F7FB);
+const Color _primary = Color(0xFF33365D);
+const Color _accent = Color(0xFF6366F1);
+const Color _bg = Color(0xFFF6F7FB);
 
 class BookingDetailsUI extends StatefulWidget {
   final String bookingId;
@@ -19,8 +20,8 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   Map<String, dynamic>? bookingData;
   bool isLoading = true;
 
-  // IMPORTANT: Update this to your current Ngrok URL
-  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+  final String _baseUrl =
+      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {
@@ -29,9 +30,13 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   }
 
   Future<void> _fetchBookingDetails() async {
-    final url = "${_baseUrl}get_booking_details.php?booking_id=${widget.bookingId}";
+    final url =
+        "${_baseUrl}get_booking_details.php?booking_id=${widget.bookingId}";
     try {
-      final response = await http.get(Uri.parse(url), headers: {"ngrok-skip-browser-warning": "true"});
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
       final decoded = jsonDecode(response.body);
       if (decoded['success'] == true) {
         setState(() {
@@ -46,177 +51,557 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     }
   }
 
+  // Status config helper
+  _StatusCfg _cfg(String s) {
+    switch (s.toLowerCase()) {
+      case 'confirmed':
+        return _StatusCfg(
+          const Color(0xFF22C55E),
+          const Color(0xFFDCFCE7),
+          Icons.check_circle_rounded,
+          "Booking Confirmed",
+        );
+      case 'completed':
+        return _StatusCfg(
+          const Color(0xFF6366F1),
+          const Color(0xFFEEEDFD),
+          Icons.task_alt_rounded,
+          "Service Completed",
+        );
+      case 'cancelled':
+        return _StatusCfg(
+          const Color(0xFFEF4444),
+          const Color(0xFFFEE2E2),
+          Icons.cancel_rounded,
+          "Booking Cancelled",
+        );
+      case 'pending':
+      default:
+        return _StatusCfg(
+          const Color(0xFFF59E0B),
+          const Color(0xFFFEF3C7),
+          Icons.schedule_rounded,
+          "Awaiting Confirmation",
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return const Scaffold(backgroundColor: pageBg, body: Center(child: CircularProgressIndicator(color: primaryBtnColor)));
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: _bg,
+        body: Center(child: CircularProgressIndicator(color: _primary)),
+      );
+    }
 
     final String rawStatus = (bookingData?['status'] ?? "Pending").toString();
-    final bool canCancel = rawStatus.toLowerCase() == 'confirmed' || rawStatus.toLowerCase() == 'pending';
+    final bool canCancel =
+        rawStatus.toLowerCase() == 'confirmed' ||
+        rawStatus.toLowerCase() == 'pending';
+    final cfg = _cfg(rawStatus);
+
+    // Provider photo
+    String? photoPath = bookingData!['profile_photo_path'];
+    String? fullImageUrl;
+    if (photoPath != null && photoPath.isNotEmpty) {
+      final clean = photoPath.startsWith('/')
+          ? photoPath.substring(1)
+          : photoPath;
+      fullImageUrl = "$_baseUrl$clean";
+    }
 
     return Scaffold(
-      backgroundColor: pageBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        title: const Text("Booking Details", style: TextStyle(fontWeight: FontWeight.bold)),
+      backgroundColor: _bg,
+      body: Column(
+        children: [
+          // ── Hero header
+          _buildHero(context, cfg, rawStatus),
+
+          // ── Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+              child: Column(
+                children: [
+                  _serviceSection(),
+                  const SizedBox(height: 16),
+                  _providerSection(
+                    bookingData!['provider_name'] ?? "Not Assigned",
+                    fullImageUrl,
+                  ),
+                  const SizedBox(height: 16),
+                  _paymentSection(
+                    bookingData!['payment_id'],
+                    bookingData!['amount'],
+                  ),
+                  const SizedBox(height: 16),
+                  _locationSection(
+                    bookingData!['address'] ?? "No address provided",
+                  ),
+                  if (canCancel) ...[
+                    const SizedBox(height: 24),
+                    _cancelBtn(context),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    );
+  }
+
+  // ── Hero ──────────────────────────────────────────────────
+
+  Widget _buildHero(BuildContext context, _StatusCfg cfg, String rawStatus) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        MediaQuery.of(context).padding.top + 16,
+        20,
+        28,
+      ),
+      decoration: BoxDecoration(
+        color: cfg.bg,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Back button
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0D000000),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 16,
+                color: cfg.color,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Status icon + text
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0D000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(cfg.icon, color: cfg.color, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cfg.label,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: cfg.color,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      "REF# ${widget.bookingId}",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B6D88),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Service section ───────────────────────────────────────
+
+  Widget _serviceSection() {
+    final name = bookingData!['service_name'] ?? "Service";
+    final date = bookingData!['booking_date'] ?? "TBD";
+    return _card(
+      "SERVICE",
+      Icons.home_repair_service_rounded,
+      Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAEBF5),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(_getServiceIcon(name), color: _primary, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1C3A),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: Color(0xFF6B6D88),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      date,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B6D88),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Provider section ──────────────────────────────────────
+
+  Widget _providerSection(String pName, String? imageUrl) {
+    final pId = bookingData!['provider_id'];
+    return _card(
+      "PROFESSIONAL",
+      Icons.person_rounded,
+      Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: const Color(0xFFEAEBF5),
+            backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+            child: imageUrl == null
+                ? const Icon(Icons.person, color: _primary, size: 26)
+                : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1C3A),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: const [
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 13,
+                      color: Color(0xFF22C55E),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      "Verified Provider",
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B6D88)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Chat button
+          _actionBtn(
+            Icons.chat_bubble_rounded,
+            const Color(0xFFEEEDFD),
+            _accent,
+            () async {
+              if (pId == null) return;
+              final prefs = await SharedPreferences.getInstance();
+              final int myId = prefs.getInt('user_id') ?? 1;
+              final int? peerId = int.tryParse(pId.toString());
+              if (peerId != null && context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProviderChatMessageScreen(
+                      currentUserId: myId,
+                      peerId: peerId,
+                      peerName: pName,
+                      peerImageUrl: imageUrl,
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          _actionBtn(
+            Icons.call_rounded,
+            const Color(0xFFDCFCE7),
+            const Color(0xFF22C55E),
+            () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionBtn(
+    IconData icon,
+    Color bg,
+    Color iconColor,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: iconColor, size: 18),
+      ),
+    );
+  }
+
+  // ── Payment section ───────────────────────────────────────
+
+  Widget _paymentSection(String? payId, dynamic amount) {
+    return _card(
+      "PAYMENT",
+      Icons.receipt_long_rounded,
+      Column(
+        children: [
+          _infoRow(
+            "Transaction ID",
+            (payId == null || payId.isEmpty) ? "Pending" : payId,
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAEBF5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Total Amount",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1C3A),
+                  ),
+                ),
+                Text(
+                  "₹$amount",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: _primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Location section ──────────────────────────────────────
+
+  Widget _locationSection(String address) {
+    return _card(
+      "LOCATION",
+      Icons.location_on_rounded,
+      Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEE2E2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: Color(0xFFEF4444),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              address,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF1A1C3A),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Cancel button ─────────────────────────────────────────
+
+  Widget _cancelBtn(BuildContext context) {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFCA5A5)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _statusCard(rawStatus.toUpperCase(), widget.bookingId),
-            const SizedBox(height: 20),
-            _serviceCard(bookingData!['service_name'] ?? "Service", bookingData!['booking_date'] ?? "TBD"),
-            const SizedBox(height: 20),
-            _professionalCard(bookingData!['provider_name'] ?? "Not Assigned"),
-            const SizedBox(height: 20),
-            _paymentCard(bookingData!['payment_id'], bookingData!['amount']),
-            const SizedBox(height: 20),
-            _locationCard(bookingData!['address'] ?? "No Address Provided"),
-            const SizedBox(height: 28),
-            if (canCancel) _cancelButton(context),
+            Icon(Icons.cancel_rounded, color: Color(0xFFEF4444), size: 18),
+            SizedBox(width: 8),
+            Text(
+              "Cancel Booking",
+              style: TextStyle(
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _professionalCard(String pName) {
-    // 1. Get the path from the database key
-    String? photoPath = bookingData!['profile_photo_path'];
-    String? fullImageUrl;
+  // ── Shared card wrapper ───────────────────────────────────
 
-    // 2. Build the full URL
-    if (photoPath != null && photoPath.toString().isNotEmpty) {
-      String cleanPath = photoPath.toString().startsWith('/')
-          ? photoPath.toString().substring(1)
-          : photoPath.toString();
-      fullImageUrl = "$_baseUrl$cleanPath";
-    }
-
-    return _section("PROFESSIONAL", ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey.shade200,
-        backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
-        child: fullImageUrl == null ? const Icon(Icons.person, color: Colors.grey) : null,
-      ),
-      title: Text(pName, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: const Text("Verified Provider"),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _CircleIcon(
-              Icons.chat,
-              pId: bookingData!['provider_id'],
-              pName: pName,
-              pImageUrl: fullImageUrl // 3. Pass it to the icon
+  Widget _card(String title, IconData titleIcon, Widget child) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
-          const SizedBox(width: 8),
-          const _CircleIcon(Icons.call),
         ],
       ),
-    ));
-  }
-
-  Widget _statusCard(String status, String id) {
-    bool isCancelled = status.toLowerCase() == 'cancelled';
-    bool isCompleted = status.toLowerCase() == 'completed';
-    Color statusColor = isCancelled ? Colors.red : (isCompleted ? Colors.blue : (status.toLowerCase() == 'pending' ? Colors.amber : Colors.green));
-    IconData statusIcon = isCancelled ? Icons.cancel : (isCompleted ? Icons.verified : (status.toLowerCase() == 'pending' ? Icons.access_time_filled : Icons.check_circle));
-
-    return Container(
-      width: double.infinity, padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-      child: Column(children: [
-        Icon(statusIcon, color: statusColor, size: 40),
-        const SizedBox(height: 12),
-        Text("Booking $status", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        Text("Reference: #$id", style: const TextStyle(color: Colors.grey)),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF6B6D88),
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
     );
   }
 
-  Widget _serviceCard(String name, String date) => _section("SERVICE", ListTile(
-    contentPadding: EdgeInsets.zero,
-    leading: CircleAvatar(backgroundColor: primaryBtnColor.withOpacity(0.1), child: Icon(_getServiceIcon(name), color: primaryBtnColor)),
-    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-    subtitle: Text(date),
-  ));
-
-  Widget _paymentCard(String? payId, dynamic amount) => _section("PAYMENT DETAILS", Column(children: [
-    _row("Transaction ID", (payId == null || payId.isEmpty) ? "Pending" : payId),
-    _row("Total Amount", "₹$amount", isBold: true),
-  ]));
-
-  Widget _locationCard(String address) => _section("LOCATION", ListTile(
-    contentPadding: EdgeInsets.zero,
-    leading: const Icon(Icons.location_on, color: Colors.red),
-    title: Text(address, style: const TextStyle(fontSize: 14)),
-  ));
-
-  Widget _cancelButton(BuildContext context) => SizedBox(width: double.infinity, child: OutlinedButton(
-    style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red), padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-    onPressed: () {},
-    child: const Text("Cancel Booking", style: TextStyle(fontWeight: FontWeight.bold)),
-  ));
-
-  Widget _section(String title, Widget child) => Container(
-    padding: const EdgeInsets.all(16), margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-      const SizedBox(height: 10),
-      child,
-    ]),
-  );
-
-  Widget _row(String label, String value, {bool isBold = false}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: const TextStyle(color: Colors.black87)),
-      Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal))
-    ]),
-  );
+  Widget _infoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6B6D88)),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1C3A),
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
 
   IconData _getServiceIcon(String service) {
     final s = service.toLowerCase();
-    if (s.contains("clean")) return Icons.cleaning_services;
-    if (s.contains("plumb")) return Icons.plumbing;
-    if (s.contains("elect")) return Icons.electrical_services;
-    return Icons.build;
+    if (s.contains("clean")) return Icons.cleaning_services_rounded;
+    if (s.contains("plumb")) return Icons.plumbing_rounded;
+    if (s.contains("elect")) return Icons.electrical_services_rounded;
+    if (s.contains("ac") || s.contains("air")) return Icons.ac_unit_rounded;
+    if (s.contains("paint")) return Icons.format_paint_rounded;
+    if (s.contains("laundry")) return Icons.local_laundry_service_rounded;
+    return Icons.handyman_rounded;
   }
 }
 
-class _CircleIcon extends StatelessWidget {
+class _StatusCfg {
+  final Color color;
+  final Color bg;
   final IconData icon;
-  final dynamic pId;
-  final String? pName;
-  final String? pImageUrl;
-
-  const _CircleIcon(this.icon, {this.pId, this.pName, this.pImageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        if (icon == Icons.chat && pId != null) {
-          final prefs = await SharedPreferences.getInstance();
-          final int myId = prefs.getInt('user_id') ?? 1;
-          final int? peerId = int.tryParse(pId.toString());
-
-          if (peerId != null && context.mounted) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ProviderChatMessageScreen(
-              currentUserId: myId,
-              peerId: peerId,
-              peerName: pName ?? "Provider",
-              peerImageUrl: pImageUrl, // Passes URL to Chat
-            )));
-          }
-        }
-      },
-      child: CircleAvatar(radius: 18, backgroundColor: Colors.grey.shade100, child: Icon(icon, size: 18, color: primaryBtnColor)),
-    );
-  }
+  final String label;
+  const _StatusCfg(this.color, this.bg, this.icon, this.label);
 }

@@ -13,39 +13,24 @@ import '../notifications/notifications.dart';
 import '../service_providers/service_providers.dart';
 
 // ════════════════════════════════════════════════════════════
-//  COLOR CONFIG — change everything from here
+//  COLOR CONFIG
 // ════════════════════════════════════════════════════════════
 
 class AppColors {
-  // Primary brand — navy
   static const Color primary = Color(0xFF33365D);
-
-  // Backgrounds
   static const Color scaffold = Color(0xFFF6F7FB);
   static const Color cardBg = Color(0xFFFFFFFF);
   static const Color appBarBg = Color(0xFFFFFFFF);
-
-  // Fallback icon bg — subtle navy tint
   static const Color iconBg = Color(0xFFEAEBF5);
-
-  // Text
   static const Color textDark = Color(0xFF1A1C3A);
   static const Color textMedium = Color(0xFF6B6D88);
   static const Color textLight = Color(0xFFB0B2C8);
-
-  // Bottom nav
   static const Color navActive = Color(0xFF33365D);
   static const Color navInactive = Color(0xFFB0B2C8);
   static const Color navBg = Color(0xFFFFFFFF);
-
-  // Bell bg
   static const Color bellBg = Color(0xFFEAEBF5);
-
-  // Star & links
   static const Color star = Color(0xFFF59E0B);
   static const Color viewAll = Color(0xFF33365D);
-
-  // Shadows
   static const Color shadow = Color(0x0D000000);
   static const Color shadowLight = Color(0x08000000);
   static const Color shadowNav = Color(0x0F000000);
@@ -140,13 +125,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ── Scaffold ──────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: currentIndex == 0 ? _buildAppBar() : null,
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomNav(),
+      // NO bottomNavigationBar here — nav is in the Stack below
+      body: Stack(
+        children: [
+          _buildBody(),
+          Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomNav()),
+        ],
+      ),
     );
   }
 
@@ -273,7 +265,8 @@ class _HomeScreenState extends State<HomeScreen> {
       onRefresh: _fetchData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 30),
+        // 110px bottom padding so last item clears the floating nav
+        padding: const EdgeInsets.only(bottom: 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -340,16 +333,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildServicesGrid() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: services.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 20,
-          childAspectRatio: 0.82,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
           final service = services[index];
@@ -357,8 +349,8 @@ class _HomeScreenState extends State<HomeScreen> {
           final style =
               serviceColors[title] ??
               const ServiceStyle(
-                bg: Color(0xFFF0EBFF),
-                icon: Color(0xFF6C3CE1),
+                bg: Color(0xFFEAEBF5),
+                icon: Color(0xFF33365D),
               );
 
           return GestureDetector(
@@ -377,35 +369,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
             },
-            child: Column(
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: style.bg,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+            child: Container(
+              decoration: BoxDecoration(
+                color: style.bg,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(4, 4),
                   ),
-                  child: Icon(service["icon"], color: style.icon, size: 26),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textDark,
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 2,
+                    offset: const Offset(-4, -4),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(service["icon"], color: style.icon, size: 26),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -488,94 +483,142 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardBg,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(20),
-                ),
-                child: Container(
-                  width: 110,
-                  height: 110,
-                  color: AppColors.iconBg,
-                  child: Icon(
-                    Icons.home_repair_service_rounded,
-                    color: AppColors.primary,
-                    size: 40,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Purple header strip
+                Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 14,
+                    vertical: 12,
                   ),
+                  color: const Color(0xFF6366F1),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "REF# ${booking['id'] ?? '—'}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        booking['booking_date'] ?? "Scheduled",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── White body
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        booking['service_name'] ?? "Service",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        booking['booking_date'] ?? "Scheduled",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                      // Provider avatar + name + status badge
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.person_outline_rounded,
-                            size: 15,
-                            color: AppColors.textMedium,
+                          CircleAvatar(
+                            radius: 13,
+                            backgroundColor: const Color(0xFFEAEBF5),
+                            backgroundImage: NetworkImage(
+                              "$_baseUrl${booking['provider_photo'] ?? ''}",
+                            ),
+                            onBackgroundImageError: (_, __) {},
+                            child: booking['provider_photo'] == null
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 13,
+                                    color: Color(0xFF6366F1),
+                                  )
+                                : null,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              booking['provider_name'] ?? "Provider",
-                              style: TextStyle(
+                              booking['provider_name'] ?? 'Provider',
+                              style: const TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textMedium,
+                                color: Color(0xFF6B6D88),
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEEDFD),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              booking['status'] ?? "Upcoming",
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF6366F1),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Service name
+                      Text(
+                        booking['service_name'] ?? "Service",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1C3A),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                      const SizedBox(height: 12),
+
+                      // View Details right-aligned
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: const [
+                          Text(
+                            "View Details",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6366F1),
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 12,
+                            color: Color(0xFF6366F1),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: AppColors.textLight,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -694,52 +737,99 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Bottom Nav ────────────────────────────────────────────
+  // ── Floating Bottom Nav ───────────────────────────────────
 
   Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.navBg,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowNav,
-            blurRadius: 16,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (i) => setState(() => currentIndex = i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.navBg,
-        selectedItemColor: AppColors.navActive,
-        unselectedItemColor: AppColors.navInactive,
-        showUnselectedLabels: true,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.navBg,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 24,
+              offset: Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: "Home",
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(0, Icons.home_outlined, Icons.home_rounded, "Home"),
+              _navItem(
+                1,
+                Icons.calendar_month_outlined,
+                Icons.calendar_month_rounded,
+                "Bookings",
+              ),
+              _navItem(
+                2,
+                Icons.chat_bubble_outline_rounded,
+                Icons.chat_bubble_rounded,
+                "Messages",
+              ),
+              _navItem(
+                3,
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                "Profile",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: "Bookings",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            label: "Messages",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: "Profile",
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(int index, IconData outline, IconData filled, String label) {
+    final bool isActive = currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 18 : 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? filled : outline,
+              color: isActive ? Colors.white : AppColors.navInactive,
+              size: 22,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: isActive
+                  ? Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -837,7 +927,7 @@ class ServiceSearchDelegate extends SearchDelegate {
     final title = service["title"] as String;
     final style =
         serviceColors[title] ??
-        const ServiceStyle(bg: Color(0xFFF0EBFF), icon: Color(0xFF6C3CE1));
+        const ServiceStyle(bg: Color(0xFFEAEBF5), icon: Color(0xFF33365D));
 
     return InkWell(
       onTap: () {
