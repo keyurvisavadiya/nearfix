@@ -12,7 +12,51 @@ import '../chat_screen/chat_screen_tile.dart';
 import '../notifications/notifications.dart';
 import '../service_providers/service_providers.dart';
 
-const Color primaryBtnColor = Color(0xFF33365D);
+// ════════════════════════════════════════════════════════════
+//  COLOR CONFIG
+// ════════════════════════════════════════════════════════════
+
+class AppColors {
+  static const Color primary = Color(0xFF33365D);
+  static const Color scaffold = Color(0xFFF6F7FB);
+  static const Color cardBg = Color(0xFFFFFFFF);
+  static const Color appBarBg = Color(0xFFFFFFFF);
+  static const Color iconBg = Color(0xFFEAEBF5);
+  static const Color textDark = Color(0xFF1A1C3A);
+  static const Color textMedium = Color(0xFF6B6D88);
+  static const Color textLight = Color(0xFFB0B2C8);
+  static const Color navActive = Color(0xFF33365D);
+  static const Color navInactive = Color(0xFFB0B2C8);
+  static const Color navBg = Color(0xFFFFFFFF);
+  static const Color bellBg = Color(0xFFEAEBF5);
+  static const Color star = Color(0xFFF59E0B);
+  static const Color viewAll = Color(0xFF33365D);
+  static const Color shadow = Color(0x0D000000);
+  static const Color shadowLight = Color(0x08000000);
+  static const Color shadowNav = Color(0x0F000000);
+}
+
+// ── Distinct color per service icon ────────────────────────
+class ServiceStyle {
+  final Color bg;
+  final Color icon;
+  const ServiceStyle({required this.bg, required this.icon});
+}
+
+const Map<String, ServiceStyle> serviceColors = {
+  "Cleaning": ServiceStyle(bg: Color(0xFFE0F7FA), icon: Color(0xFF0097A7)),
+  "Electric": ServiceStyle(bg: Color(0xFFFFF8E1), icon: Color(0xFFF9A825)),
+  "Plumbing": ServiceStyle(bg: Color(0xFFE3F2FD), icon: Color(0xFF1565C0)),
+  "Repair": ServiceStyle(bg: Color(0xFFFFEBEE), icon: Color(0xFFD32F2F)),
+  "AC": ServiceStyle(bg: Color(0xFFE8F5E9), icon: Color(0xFF2E7D32)),
+  "Painting": ServiceStyle(bg: Color(0xFFFCE4EC), icon: Color(0xFFC2185B)),
+  "Laundry": ServiceStyle(bg: Color(0xFFEDE7F6), icon: Color(0xFF512DA8)),
+  "More": ServiceStyle(bg: Color(0xFFF3F3F3), icon: Color(0xFF757575)),
+};
+
+// ════════════════════════════════════════════════════════════
+//  HOME SCREEN
+// ════════════════════════════════════════════════════════════
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,8 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _upcomingBooking;
   bool _isLoading = true;
 
-  // Ensure this URL is updated to your current active Ngrok link
-  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+  final String _baseUrl =
+      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
 
   final List<Map<String, dynamic>> services = [
     {"icon": Icons.cleaning_services, "title": "Cleaning"},
@@ -40,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {"icon": Icons.local_laundry_service, "title": "Laundry"},
     {"icon": Icons.more_horiz, "title": "More"},
   ];
-  
 
   @override
   void initState() {
@@ -53,13 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id') ?? 1;
 
-      // 1. Fetch Recommended Providers
       final providersRes = await http.get(
         Uri.parse("${_baseUrl}get_providers.php"),
         headers: {"ngrok-skip-browser-warning": "true"},
       );
-
-      // 2. Fetch the Dynamic Upcoming Booking
       final bookingRes = await http.get(
         Uri.parse("${_baseUrl}get_upcoming_booking.php?user_id=$userId"),
         headers: {"ngrok-skip-browser-warning": "true"},
@@ -73,7 +113,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
         setState(() {
           _dbProviders = providersData['data'] ?? [];
-          _upcomingBooking = (bookingData['status'] == 'success') ? bookingData['data'] : null;
+          _upcomingBooking = (bookingData['status'] == 'success')
+              ? bookingData['data']
+              : null;
           _isLoading = false;
         });
       }
@@ -83,75 +125,162 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ── Scaffold ──────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
-      appBar: currentIndex == 0 ? _buildHomeAppBar() : null,
-      body: _buildBodyContent(),
-      bottomNavigationBar: _buildBottomNavBar(),
+      backgroundColor: AppColors.scaffold,
+      appBar: currentIndex == 0 ? _buildAppBar() : null,
+      // NO bottomNavigationBar here — nav is in the Stack below
+      body: Stack(
+        children: [
+          _buildBody(),
+          Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomNav()),
+        ],
+      ),
     );
   }
 
-  Widget _buildBodyContent() {
+  Widget _buildBody() {
     switch (currentIndex) {
-      case 0: return _buildHomeBody();
-      case 1: return const BookingsScreen();
-      case 2: return const ChatScreen();
-      case 3: return const ProfileScreen();
-      default: return _buildHomeBody();
+      case 0:
+        return _buildHomeBody();
+      case 1:
+        return const BookingsScreen();
+      case 2:
+        return const ChatScreen();
+      case 3:
+        return const ProfileScreen();
+      default:
+        return _buildHomeBody();
     }
   }
 
-  PreferredSizeWidget _buildHomeAppBar() {
+  // ── AppBar ────────────────────────────────────────────────
+
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.appBarBg,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       toolbarHeight: 72,
+      titleSpacing: 20,
       title: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressScreen())),
-        child: const Column(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddressScreen()),
+        ),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              "LOCATION",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMedium,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 2),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.location_on, color: Colors.black, size: 18),
-                SizedBox(width: 4),
-                Text("Home", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
-                Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black),
+                Icon(
+                  Icons.location_on_rounded,
+                  color: AppColors.primary,
+                  size: 18,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  "Home",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                  color: AppColors.textDark,
+                ),
               ],
             ),
-            Text("Keyur Apartment, Ahmedabad", style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, color: Colors.black),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
+        Padding(
+          padding: const EdgeInsets.only(right: 20),
+          child: InkWell(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+            ),
+            borderRadius: BorderRadius.circular(50),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.bellBg,
+                shape: BoxShape.circle,
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_outlined,
+                    color: AppColors.textDark,
+                    size: 22,
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.bellBg, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
+  // ── Home Body ─────────────────────────────────────────────
+
   Widget _buildHomeBody() {
     return RefreshIndicator(
+      color: AppColors.primary,
       onRefresh: _fetchData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 20),
+        // 110px bottom padding so last item clears the floating nav
+        padding: const EdgeInsets.only(bottom: 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             _buildSearchBar(),
-            _buildSectionHeader("Services"),
+            const SizedBox(height: 28),
             _buildServicesGrid(),
-            _buildSectionHeader("Upcoming Booking"),
+            const SizedBox(height: 28),
+            _buildSectionHeader("Upcoming Booking", showViewAll: false),
+            const SizedBox(height: 12),
             _buildUpcomingCard(),
-            _buildSectionHeader("Recommended for you"),
+            const SizedBox(height: 28),
+            _buildSectionHeader("Recommended for you", showViewAll: false),
+            const SizedBox(height: 12),
             _buildRecommendedList(),
           ],
         ),
@@ -159,36 +288,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── Search Bar ────────────────────────────────────────────
+
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: InkWell(
-        onTap: () => showSearch(context: context, delegate: ServiceSearchDelegate(services)),
-        borderRadius: BorderRadius.circular(14),
+        onTap: () => showSearch(
+          context: context,
+          delegate: ServiceSearchDelegate(services),
+        ),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            color: AppColors.cardBg,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
             ],
-            border: Border.all(color: Colors.grey.withOpacity(0.1)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.search, color: Color(0xFF33365D), size: 22),
+              Icon(Icons.search_rounded, color: AppColors.textMedium, size: 22),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "Search for 'Plumbing' or 'AC'...",
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 15, letterSpacing: 0.3),
+                  "Search for services...",
+                  style: TextStyle(color: AppColors.textMedium, fontSize: 15),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFF33365D).withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.tune, color: Color(0xFF33365D), size: 18),
               ),
             ],
           ),
@@ -196,6 +328,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // ── Services Grid ─────────────────────────────────────────
 
   Widget _buildServicesGrid() {
     return Padding(
@@ -205,30 +339,66 @@ class _HomeScreenState extends State<HomeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: services.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, crossAxisSpacing: 12, mainAxisSpacing: 12,
+          crossAxisCount: 4,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
           final service = services[index];
-          return InkWell(
+          final title = service["title"] as String;
+          final style =
+              serviceColors[title] ??
+              const ServiceStyle(
+                bg: Color(0xFFEAEBF5),
+                icon: Color(0xFF33365D),
+              );
+
+          return GestureDetector(
             onTap: () {
-              if (service["title"] == "More") {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AllServicesScreen()));
+              if (title == "More") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AllServicesScreen()),
+                );
               } else {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceProvidersScreen(serviceName: service["title"])));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ServiceProvidersScreen(serviceName: title),
+                  ),
+                );
               }
             },
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: style.bg,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(4, 4),
+                  ),
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 2,
+                    offset: const Offset(-4, -4),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(service["icon"], color: Colors.black87, size: 26),
+                  Icon(service["icon"], color: style.icon, size: 26),
                   const SizedBox(height: 6),
-                  Text(service["title"], style: const TextStyle(fontSize: 11)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textDark,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -238,23 +408,61 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── Section Header ────────────────────────────────────────
+
+  Widget _buildSectionHeader(String title, {bool showViewAll = true}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+          if (showViewAll)
+            Text(
+              "View all",
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.viewAll,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Upcoming Booking Card ─────────────────────────────────
+
   Widget _buildUpcomingCard() {
     if (_upcomingBooking == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey.shade200),
+            color: AppColors.cardBg,
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: const Column(
+          child: Column(
             children: [
-              Icon(Icons.calendar_today_outlined, color: Colors.grey, size: 30),
-              SizedBox(height: 10),
-              Text("No upcoming bookings found", style: TextStyle(color: Colors.grey)),
+              Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.textLight,
+                size: 32,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "No upcoming bookings",
+                style: TextStyle(color: AppColors.textMedium, fontSize: 14),
+              ),
             ],
           ),
         ),
@@ -265,102 +473,261 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: InkWell(
-        // FIXED: Now passing the actual ID from the map instead of 'bId'
+      child: GestureDetector(
         onTap: () {
           final String actualID = booking['id'].toString();
           Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => BookingDetailsUI(bookingId: actualID))
+            context,
+            MaterialPageRoute(
+              builder: (context) => BookingDetailsUI(bookingId: actualID),
+            ),
           );
         },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12)],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.cleaning_services, color: Colors.blue),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(booking['service_name'] ?? "Service", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
-                  _statusBadge(booking['status'] ?? "Confirmed", Colors.green),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFFE5E7EB),
-                    backgroundImage: NetworkImage("$_baseUrl${booking['provider_photo'] ?? ''}"),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Purple header strip
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  color: const Color(0xFF6366F1),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(booking['provider_name'] ?? "Provider", style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(booking['booking_date'] ?? "Scheduled", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        "REF# ${booking['id'] ?? '—'}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      Text(
+                        booking['booking_date'] ?? "Scheduled",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
-                  const Spacer(),
-                  _iconAction(Icons.call, Colors.green),
-                  const SizedBox(width: 8),
-                  _iconAction(Icons.message, Colors.blue),
-                ],
-              )
-            ],
+                ),
+
+                // ── White body
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Provider avatar + name + status badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 13,
+                            backgroundColor: const Color(0xFFEAEBF5),
+                            backgroundImage: NetworkImage(
+                              "$_baseUrl${booking['provider_photo'] ?? ''}",
+                            ),
+                            onBackgroundImageError: (_, __) {},
+                            child: booking['provider_photo'] == null
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 13,
+                                    color: Color(0xFF6366F1),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              booking['provider_name'] ?? 'Provider',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6B6D88),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEEDFD),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              booking['status'] ?? "Upcoming",
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF6366F1),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Service name
+                      Text(
+                        booking['service_name'] ?? "Service",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1C3A),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                      const SizedBox(height: 12),
+
+                      // View Details right-aligned
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: const [
+                          Text(
+                            "View Details",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6366F1),
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 12,
+                            color: Color(0xFF6366F1),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // ── Recommended List ──────────────────────────────────────
+
   Widget _buildRecommendedList() {
-    if (_isLoading) return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
     return SizedBox(
-      height: 170,
+      height: 230,
       child: ListView.builder(
         padding: const EdgeInsets.only(left: 20),
         scrollDirection: Axis.horizontal,
         itemCount: _dbProviders.length,
         itemBuilder: (context, index) {
           final item = _dbProviders[index];
-          return InkWell(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceProviderDetailScreen(provider: item)));
-            },
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ServiceProviderDetailScreen(provider: item),
+              ),
+            ),
             child: Container(
-              width: 150,
+              width: 180,
               margin: const EdgeInsets.only(right: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10)],
+                color: AppColors.cardBg,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     child: Image.network(
                       "$_baseUrl${item['photo'] ?? ''}",
-                      height: 90, width: 150, fit: BoxFit.cover,
-                      errorBuilder: (c,e,s) => Container(height: 90, color: Colors.grey.shade200, child: const Icon(Icons.image)),
+                      height: 130,
+                      width: 180,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(
+                        height: 130,
+                        color: AppColors.iconBg,
+                        child: Icon(
+                          Icons.person,
+                          color: AppColors.primary,
+                          size: 40,
+                        ),
+                      ),
                     ),
                   ),
                   Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Text(item['name'] ?? 'Provider', style: const TextStyle(fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                    child: Text(
+                      item['name'] ?? 'Provider',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.textDark,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(item['title'] ?? 'Professional', style: const TextStyle(fontSize: 11, color: Colors.grey))
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      item['title'] ?? 'Professional',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMedium,
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          color: AppColors.star,
+                          size: 15,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          item['rating']?.toString() ?? "4.9",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -370,40 +737,110 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) => setState(() => currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: primaryBtnColor,
-        unselectedItemColor: Colors.grey.shade500,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: "Bookings"),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+  // ── Floating Bottom Nav ───────────────────────────────────
+
+  Widget _buildBottomNav() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.navBg,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 24,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _navItem(0, Icons.home_outlined, Icons.home_rounded, "Home"),
+              _navItem(
+                1,
+                Icons.calendar_month_outlined,
+                Icons.calendar_month_rounded,
+                "Bookings",
+              ),
+              _navItem(
+                2,
+                Icons.chat_bubble_outline_rounded,
+                Icons.chat_bubble_rounded,
+                "Messages",
+              ),
+              _navItem(
+                3,
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                "Profile",
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) => Padding(padding: const EdgeInsets.fromLTRB(20, 30, 20, 12), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)));
-  Widget _statusBadge(String label, Color color) => Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)));
-  Widget _iconAction(IconData icon, Color color) => Container(decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle), child: IconButton(icon: Icon(icon, color: color, size: 20), onPressed: () {}));
+  Widget _navItem(int index, IconData outline, IconData filled, String label) {
+    final bool isActive = currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 18 : 12,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? filled : outline,
+              color: isActive ? Colors.white : AppColors.navInactive,
+              size: 22,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: isActive
+                  ? Row(
+                      children: [
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// Service Search Delegate
+// ════════════════════════════════════════════════════════════
+//  SEARCH DELEGATE
+// ════════════════════════════════════════════════════════════
+
 class ServiceSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> services;
-
   ServiceSearchDelegate(this.services);
 
   @override
@@ -426,21 +863,19 @@ class ServiceSearchDelegate extends SearchDelegate {
   }
 
   @override
-  List<Widget>? buildActions(BuildContext context) =>
-      [
-        if (query.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.clear, color: Colors.grey),
-            onPressed: () => query = '',
-          ),
-      ];
+  List<Widget>? buildActions(BuildContext context) => [
+    if (query.isNotEmpty)
+      IconButton(
+        icon: const Icon(Icons.clear, color: Colors.grey),
+        onPressed: () => query = '',
+      ),
+  ];
 
   @override
-  Widget? buildLeading(BuildContext context) =>
-      IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-        onPressed: () => close(context, null),
-      );
+  Widget? buildLeading(BuildContext context) => IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+    onPressed: () => close(context, null),
+  );
 
   @override
   Widget buildResults(BuildContext context) => _buildSearchBody(context);
@@ -449,104 +884,111 @@ class ServiceSearchDelegate extends SearchDelegate {
   Widget buildSuggestions(BuildContext context) => _buildSearchBody(context);
 
   Widget _buildSearchBody(BuildContext context) {
-    // Filters the list based on query and hides the "More" button from results
     final results = services
-        .where((s) =>
-    s["title"].toLowerCase().contains(query.toLowerCase()) &&
-        s["title"] != "More")
+        .where(
+          (s) =>
+              s["title"].toLowerCase().contains(query.toLowerCase()) &&
+              s["title"] != "More",
+        )
         .toList();
 
     if (query.isEmpty) {
       return Container(
-        color: const Color(0xFFF6F7F9),
-        child: const Center(
-          child: Text("Start typing to find services...",
-              style: TextStyle(color: Colors.grey)),
+        color: AppColors.scaffold,
+        child: Center(
+          child: Text(
+            "Start typing to find services...",
+            style: TextStyle(color: AppColors.textMedium),
+          ),
         ),
       );
     }
 
     return Container(
-      color: const Color(0xFFF6F7F9),
+      color: AppColors.scaffold,
       child: results.isEmpty
-          ? const Center(child: Text(
-          "No services found", style: TextStyle(color: Colors.grey)))
+          ? Center(
+              child: Text(
+                "No services found",
+                style: TextStyle(color: AppColors.textMedium),
+              ),
+            )
           : ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: results.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final service = results[index];
-          return _buildSearchListTile(context, service);
-        },
-      ),
+              padding: const EdgeInsets.all(20),
+              itemCount: results.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) =>
+                  _buildSearchTile(context, results[index]),
+            ),
     );
   }
 
-  Widget _buildSearchListTile(BuildContext context,
-      Map<String, dynamic> service) {
+  Widget _buildSearchTile(BuildContext context, Map<String, dynamic> service) {
+    final title = service["title"] as String;
+    final style =
+        serviceColors[title] ??
+        const ServiceStyle(bg: Color(0xFFEAEBF5), icon: Color(0xFF33365D));
+
     return InkWell(
       onTap: () {
         close(context, null);
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                ServiceProvidersScreen(serviceName: service["title"]),
+            builder: (_) => ServiceProvidersScreen(serviceName: title),
           ),
         );
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: AppColors.shadowLight,
               blurRadius: 10,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Row(
           children: [
-            // Modern Compact Icon Container
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF33365D).withOpacity(0.05),
+                color: style.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                  service["icon"], color: const Color(0xFF33365D), size: 22),
+              child: Icon(service["icon"], color: style.icon, size: 22),
             ),
             const SizedBox(width: 16),
-            // Text Information
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    service["title"],
-                    style: const TextStyle(
+                    title,
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: Color(0xFF1E293B),
+                      color: AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     "Available in your area",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppColors.textMedium),
                   ),
                 ],
               ),
             ),
-            const Icon(
-                Icons.arrow_forward_ios, size: 14, color: Colors.black26),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppColors.textLight,
+            ),
           ],
         ),
       ),
