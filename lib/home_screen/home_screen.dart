@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
 
   final String _baseUrl =
-      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
   final List<Map<String, dynamic>> services = [
     {"icon": Icons.cleaning_services, "title": "Cleaning"},

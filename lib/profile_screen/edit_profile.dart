@@ -23,7 +23,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   bool isLoading = false;
 
-  final String baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+  final String baseUrl = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {

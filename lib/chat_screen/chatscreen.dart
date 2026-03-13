@@ -28,7 +28,7 @@ class _ProviderChatMessageScreenState extends State<ProviderChatMessageScreen> {
   List<dynamic> _messages = [];
   Timer? _timer;
 
-  final String _handlerUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/chat_handler.php";
+  final String _handlerUrl = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/chat_handler.php";
 
   @override
   void initState() {

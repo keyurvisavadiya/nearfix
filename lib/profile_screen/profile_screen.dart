@@ -20,7 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int? _userId;
   String? _profilePic;
 
-  final String _baseUrl = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+  final String _baseUrl = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {

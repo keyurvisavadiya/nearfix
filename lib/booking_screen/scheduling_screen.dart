@@ -76,7 +76,7 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id');
 
-    const String url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/schedule_service.php";
+    const String url = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/schedule_service.php";
 
     try {
       final response = await http.post(

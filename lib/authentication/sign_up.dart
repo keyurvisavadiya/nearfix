@@ -32,7 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => isLoading = true);
 
     // 2. Your Live Ngrok URL
-    const String url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/signup.php";
+    const String url = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/signup.php";
 
     try {
       final response = await http.post(

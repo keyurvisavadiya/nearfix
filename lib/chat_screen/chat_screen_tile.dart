@@ -19,7 +19,7 @@ class _ChatScreenState extends State<ChatScreen> {
   int? _currentUserId;
 
   final String _baseUrl =
-      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {
@@ -124,7 +124,7 @@ class ChatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String fullImageUrl =
-        "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/$imageUrl";
+        "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/$imageUrl";
 
     return GestureDetector(
       onTap: () {

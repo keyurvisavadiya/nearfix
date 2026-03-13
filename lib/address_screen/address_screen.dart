@@ -27,7 +27,7 @@ class _AddressScreenState extends State<AddressScreen> {
     final userId = prefs.getInt('user_id');
     if (userId == null) return;
 
-    final url = "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
+    final url = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
 
     try {
       final response = await http.get(Uri.parse(url));

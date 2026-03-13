@@ -21,7 +21,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   bool isLoading = true;
 
   final String _baseUrl =
-      "https://nonregimented-ably-amare.ngrok-free.dev/nearfix/";
+      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {
