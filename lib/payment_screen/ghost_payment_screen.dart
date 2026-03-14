@@ -4,11 +4,17 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 class GhostPaymentScreen extends StatefulWidget {
   final double amount;
   final String serviceName;
+  final String providerId;
+  final double latitude;
+  final double longitude;
 
   const GhostPaymentScreen({
     super.key,
     required this.amount,
     required this.serviceName,
+    required this.providerId,
+    required this.latitude,
+    required this.longitude,
   });
 
   @override
@@ -17,33 +23,34 @@ class GhostPaymentScreen extends StatefulWidget {
 
 class _GhostPaymentScreenState extends State<GhostPaymentScreen> {
   late Razorpay _razorpay;
+
   static const Color primaryColor = Color(0xFF33365D);
 
   @override
   void initState() {
     super.initState();
+
     _razorpay = Razorpay();
 
-    // Bind listeners
+    // Razorpay listeners
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handleSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handleError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
 
-    // Auto-launch Razorpay immediately
+    // Launch payment automatically
     WidgetsBinding.instance.addPostFrameCallback((_) => _launchRazorpay());
   }
 
   void _launchRazorpay() {
     var options = {
-      'key': 'rzp_test_SGMtKOLbD6h9TD', // Your Test Key
-      'amount': (widget.amount * 100).toInt(), // Amount in paise
+      'key': 'rzp_test_SGMtKOLbD6h9TD',
+      'amount': (widget.amount * 100).toInt(),
       'name': 'NearFix',
       'description': widget.serviceName,
       'prefill': {
         'contact': '9876543210',
         'email': 'customer@example.com'
       },
-      // Time/timeout section removed to keep it standard ✅
       'retry': {'enabled': false},
     };
 
@@ -55,19 +62,21 @@ class _GhostPaymentScreenState extends State<GhostPaymentScreen> {
     }
   }
 
-  // --- SUCCESS HANDLER ---
+  // PAYMENT SUCCESS
   void _handleSuccess(PaymentSuccessResponse response) {
     if (mounted) {
-      // 🔥 IMPORTANT: Pass the payment ID back to the previous screen
-      // This allows the Scheduling screen to save it to your MySQL DB
-      Navigator.pop(context, response.paymentId);
+      Navigator.pop(context, {
+        "payment_id": response.paymentId,
+        "provider_id": widget.providerId,
+        "latitude": widget.latitude,
+        "longitude": widget.longitude
+      });
     }
   }
 
-  // --- ERROR/CANCEL HANDLER ---
+  // PAYMENT FAILED / CANCELLED
   void _handleError(PaymentFailureResponse response) {
     if (mounted) {
-      // Return 'null' so the Scheduling screen knows not to save the booking
       Navigator.pop(context, null);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,17 +98,17 @@ class _GhostPaymentScreenState extends State<GhostPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             CircularProgressIndicator(
               color: primaryColor,
               strokeWidth: 3,
             ),
-             SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               "Connecting to Secure Gateway...",
               style: TextStyle(

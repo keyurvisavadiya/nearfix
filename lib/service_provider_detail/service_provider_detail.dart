@@ -6,7 +6,15 @@ const Color _bg = Color(0xFFF6F7FB);
 
 class ServiceProviderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> provider;
-  const ServiceProviderDetailScreen({super.key, required this.provider});
+  final double latitude;
+  final double longitude;
+
+  const ServiceProviderDetailScreen({
+    super.key,
+    required this.provider,
+    required this.latitude,
+    required this.longitude,
+  });
 
   @override
   State<ServiceProviderDetailScreen> createState() =>
@@ -438,8 +446,10 @@ class _ServiceProviderDetailScreenState
                 serviceName: job,
                 providerId: providerId,
                 visitingCharge: amount,
+                latitude: widget.latitude,
+                longitude: widget.longitude,
               ),
-            ),
+          )
           );
         },
         child: Row(

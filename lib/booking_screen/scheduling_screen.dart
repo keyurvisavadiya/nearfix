@@ -9,13 +9,17 @@ import 'package:nearfix/payment_screen/ghost_payment_screen.dart';
 class ScheduleServiceScreen extends StatefulWidget {
   final String serviceName;
   final String providerId;
-  final String visitingCharge; // <--- 1. ADD THIS PARAMETER
+  final String visitingCharge;
+  final double latitude;
+  final double longitude;
 
   const ScheduleServiceScreen({
     super.key,
     required this.serviceName,
     required this.providerId,
-    required this.visitingCharge, // <--- 2. ADD THIS TO CONSTRUCTOR
+    required this.visitingCharge,
+    required this.latitude,
+    required this.longitude,
   });
 
   @override
@@ -51,22 +55,27 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
 
     if (pickedAddress == null) return;
 
-    // --- 3. PASS THE DYNAMIC AMOUNT TO PAYMENT SCREEN ---
-    // Converting visitingCharge string to double
     double amountToPay = double.tryParse(widget.visitingCharge) ?? 0.0;
 
-    final String? paymentId = await Navigator.push(
+    // --- FIX 1: PASS ALL REQUIRED ARGUMENTS ---
+    // GhostPaymentScreen returns a Map<String, dynamic>, not a String!
+    final Map<String, dynamic>? paymentResult = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => GhostPaymentScreen(
-            amount: amountToPay, // Dynamic amount!
-            serviceName: widget.serviceName
+          amount: amountToPay,
+          serviceName: widget.serviceName,
+          providerId: widget.providerId,
+          latitude: widget.latitude,
+          longitude: widget.longitude,
         ),
       ),
     );
 
-    if (paymentId != null) {
-      _saveBookingToDB(paymentId, pickedAddress, amountToPay.toString());
+    // --- FIX 2: EXTRACT DATA FROM THE RETURNED MAP ---
+    if (paymentResult != null && paymentResult.containsKey("payment_id")) {
+      String payId = paymentResult["payment_id"];
+      _saveBookingToDB(payId, pickedAddress, amountToPay.toString());
     }
   }
 
@@ -90,7 +99,10 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
           "notes": _notesController.text.trim(),
           "address": address,
           "payment_id": payId,
-          "amount": finalAmount, // --- 4. SAVE THE REAL AMOUNT ---
+          "amount": finalAmount,
+          // Sending coordinates to DB as well for the provider to see on a map
+          "latitude": widget.latitude.toString(),
+          "longitude": widget.longitude.toString(),
         },
       );
 
@@ -109,7 +121,6 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
     }
   }
 
-  // ... rest of your UI code (_showSuccessDialog, build, etc.)
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -133,7 +144,6 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("Schedule ${widget.serviceName}"),
-        // Display the price in the AppBar for transparency
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),

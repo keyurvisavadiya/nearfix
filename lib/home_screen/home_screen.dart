@@ -697,11 +697,15 @@ class _HomeScreenState extends State<HomeScreen> {
           final item = _dbProviders[index];
           return GestureDetector(
             onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ServiceProviderDetailScreen(provider: item),
+            context,
+            MaterialPageRoute(
+              builder: (_) => ServiceProviderDetailScreen(
+                provider: item,
+                latitude: double.parse(item['latitude']),
+                longitude: double.parse(item['longitude']),
               ),
             ),
+          ),
             child: Container(
               width: 180,
               margin: const EdgeInsets.only(right: 16),

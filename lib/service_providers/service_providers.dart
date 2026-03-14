@@ -181,8 +181,14 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => ServiceProviderDetailScreen(provider: providerData))
+          context,
+          MaterialPageRoute(
+            builder: (_) => ServiceProviderDetailScreen(
+              provider: providerData,
+              latitude: widget.latitude,
+              longitude: widget.longitude,
+            ),
+          ),
         ),
         child: Container(
           padding: const EdgeInsets.all(12),
