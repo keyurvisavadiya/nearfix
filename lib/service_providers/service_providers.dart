@@ -1,12 +1,19 @@
 import 'dart:convert';
-import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../service_provider_detail/service_provider_detail.dart';
 
 class ServiceProvidersScreen extends StatefulWidget {
   final String serviceName;
-  const ServiceProvidersScreen({super.key, required this.serviceName});
+  final double latitude;  // Received from Home (Current) or Map (Selected)
+  final double longitude; // Received from Home (Current) or Map (Selected)
+
+  const ServiceProvidersScreen({
+    super.key,
+    required this.serviceName,
+    required this.latitude,
+    required this.longitude,
+  });
 
   @override
   State<ServiceProvidersScreen> createState() => _ServiceProvidersScreenState();
@@ -23,32 +30,29 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
   @override
   void initState() {
     super.initState();
+    // We no longer call Geolocator here because coordinates are passed in
     _fetchProviders();
   }
 
   Future<void> _fetchProviders() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      // 1. Check/Request Permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
+      // Use widget.latitude and widget.longitude passed from the previous screen
+      final String queryUrl = "${baseUrl}get_nearby_providers.php"
+          "?category=${Uri.encodeComponent(widget.serviceName)}"
+          "&lat=${widget.latitude}"
+          "&lng=${widget.longitude}";
 
-      // 2. Get User Position
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium);
+      print("FETCHING FROM: $queryUrl");
 
-      // 3. Call the NEW PHP script with coordinates
-      final String queryUrl =
-          "${baseUrl}get_nearby_providers.php" +
-              "?category=${widget.serviceName}" +
-              "&lat=${position.latitude}" +
-              "&lng=${position.longitude}";
-      print("USER LOCATION: ${position.latitude}, ${position.longitude}");
-
-      final response = await http.get(Uri.parse(queryUrl),
-          headers: {"ngrok-skip-browser-warning": "true"});
+      final response = await http.get(
+        Uri.parse(queryUrl),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -59,16 +63,22 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
           });
         } else {
           setState(() {
-            _errorMessage = "No experts found within 8km";
+            _errorMessage = "No experts found within 8km of this location";
             _isLoading = false;
           });
         }
+      } else {
+        setState(() {
+          _errorMessage = "Server Error: ${response.statusCode}";
+          _isLoading = false;
+        });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = "Error: Please enable location services";
+        _errorMessage = "Connection error. Please check your internet.";
         _isLoading = false;
       });
+      print("Error: $e");
     }
   }
 
@@ -88,11 +98,18 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.serviceName, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-            Text("${_providers.length} experts found", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Text(
+                widget.serviceName,
+                style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)
+            ),
+            Text(
+                _isLoading ? "Searching..." : "${_providers.length} experts found nearby",
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12)
+            ),
           ],
         ),
       ),
@@ -104,7 +121,27 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
 
   Widget _buildProviderList() {
     if (_errorMessage != null && _providers.isEmpty) {
-      return Center(child: Text(_errorMessage!));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.location_off_outlined, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              TextButton(
+                onPressed: _fetchProviders,
+                child: const Text("Try Again", style: TextStyle(color: primaryColor)),
+              )
+            ],
+          ),
+        ),
+      );
     }
 
     return ListView.builder(
@@ -113,8 +150,6 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
       itemBuilder: (context, index) {
         final provider = _providers[index];
 
-        // 1. Extract the distance sent by the PHP script
-        // We use double.tryParse to be safe, then format to 1 decimal place
         double distanceValue = double.tryParse(provider['distance'].toString()) ?? 0.0;
         String distanceLabel = "${distanceValue.toStringAsFixed(1)} km away";
 
@@ -122,7 +157,6 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
           context,
           providerData: provider,
           name: provider['full_name'] ?? "Expert",
-          // 2. Change subTitle to show the distance
           subTitle: distanceLabel,
           price: _formatPrice(provider['visiting_charges']),
           rating: "4.9",
@@ -146,13 +180,18 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceProviderDetailScreen(provider: providerData))),
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ServiceProviderDetailScreen(provider: providerData))
+        ),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))
+            ],
           ),
           child: Row(
             children: [
@@ -166,7 +205,6 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor)),
-                        // --- PRICE DISPLAY ---
                         Text(price, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.blueAccent)),
                       ],
                     ),
@@ -189,7 +227,6 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
     );
   }
 
-  // (Keeping existing helpers: _buildImageStack, _buildTag)
   Widget _buildImageStack(String url, String rating) {
     return Stack(
       clipBehavior: Clip.none,
@@ -199,15 +236,28 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
             url, height: 75, width: 75, fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(height: 75, width: 75, color: Colors.grey.shade200, child: const Icon(Icons.person, color: Colors.grey)),
+            errorBuilder: (context, error, stackTrace) => Container(
+                height: 75, width: 75, color: Colors.grey.shade200,
+                child: const Icon(Icons.person, color: Colors.grey)
+            ),
           ),
         ),
         Positioned(
           bottom: -6,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]),
-            child: Row(children: [const Icon(Icons.star, color: Colors.amber, size: 12), const SizedBox(width: 2), Text(rating, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))]),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]
+            ),
+            child: Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 12),
+                  const SizedBox(width: 2),
+                  Text(rating, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold))
+                ]
+            ),
           ),
         ),
       ],

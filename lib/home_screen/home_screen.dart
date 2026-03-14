@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:nearfix/booking_screen/booking_screen_details.dart';
 import 'package:nearfix/booking_screen/bookings_screen.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../address_screen/address_screen.dart';
 import '../all_service_providers/all_service_providers.dart';
 import '../chat_screen/chat_screen_tile.dart';
+import '../map/map_picker_screen.dart';
 import '../notifications/notifications.dart';
 import '../service_providers/service_providers.dart';
 
@@ -81,6 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchData();
   }
+
 
   Future<void> _fetchServices() async {
     final response = await http.get(
@@ -418,14 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final Color iconColor = getColorFromHex(service['icon_color'] ?? "#33365D");
 
           return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ServiceProvidersScreen(serviceName: title),
-                ),
-              );
-            },
+            onTap: () => showLocationSelection(context,title),
             child: Container(
               decoration: BoxDecoration(
                 color: bgColor,
@@ -985,13 +981,8 @@ class ServiceSearchDelegate extends SearchDelegate {
 
     return InkWell(
       onTap: () {
-        close(context, null);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ServiceProvidersScreen(serviceName: title),
-          ),
-        );
+        Navigator.pop(context);
+        showLocationSelection(context, title);
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -1080,6 +1071,7 @@ IconData getIconFromString(String? iconName) {
   }
 }
 
+
 Color getColorFromHex(String hexColor) {
   try {
     hexColor = hexColor.replaceAll("#", "");
@@ -1089,6 +1081,8 @@ Color getColorFromHex(String hexColor) {
     return const Color(0xFFEAEBF5); // Fallback color
   }
 }
+
+
 
 class AllServicesScreen extends StatelessWidget {
   // We pass the full list of services to this screen
@@ -1156,12 +1150,7 @@ class AllServicesScreen extends StatelessWidget {
               subtitle: const Text("Professional service providers available"),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ServiceProvidersScreen(serviceName: s['title']),
-                  ),
-                );
+                showLocationSelection(context, s['title']);
               },
             ),
           );
@@ -1170,4 +1159,84 @@ class AllServicesScreen extends StatelessWidget {
     );
   }
 }
+void showLocationSelection(BuildContext context, String serviceName) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
 
+            const Text(
+              "Where do you need the service?",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 20),
+
+            ListTile(
+              leading: const Icon(Icons.my_location),
+              title: const Text("Use Current Location"),
+                onTap: () async {
+
+                  LocationPermission permission = await Geolocator.checkPermission();
+
+                  if (permission == LocationPermission.denied) {
+                    permission = await Geolocator.requestPermission();
+                  }
+
+                  if (permission == LocationPermission.deniedForever) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Location permission permanently denied")),
+                    );
+                    return;
+                  }
+
+                  Position position = await Geolocator.getCurrentPosition(
+                      desiredAccuracy: LocationAccuracy.high);
+
+                  Navigator.pop(context); // close bottom sheet AFTER location
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ServiceProvidersScreen(
+                        serviceName: serviceName,
+                        latitude: position.latitude,
+                        longitude: position.longitude,
+                      ),
+                    ),
+                  );
+                }
+            ),
+
+            const Divider(),
+
+            ListTile(
+              leading: const Icon(Icons.map),
+              title: const Text("Select Different Location"),
+              onTap: () {
+
+                Navigator.pop(context);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MapPickerScreen(serviceName: serviceName),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
