@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../service_provider_detail/service_provider_detail.dart';
@@ -26,35 +27,48 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
   }
 
   Future<void> _fetchProviders() async {
+    setState(() => _isLoading = true);
     try {
-      final response = await http.get(
-        Uri.parse("${baseUrl}get_providers.php?category=${widget.serviceName}"),
-        headers: {"ngrok-skip-browser-warning": "true"},
-      );
+      // 1. Check/Request Permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-      if (!mounted) return;
+      // 2. Get User Position
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium);
+
+      // 3. Call the NEW PHP script with coordinates
+      final String queryUrl =
+          "${baseUrl}get_nearby_providers.php" +
+              "?category=${widget.serviceName}" +
+              "&lat=${position.latitude}" +
+              "&lng=${position.longitude}";
+      print("USER LOCATION: ${position.latitude}, ${position.longitude}");
+
+      final response = await http.get(Uri.parse(queryUrl),
+          headers: {"ngrok-skip-browser-warning": "true"});
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['status'] == 'success') {
+        if (data['success'] == true) {
           setState(() {
             _providers = data['data'];
             _isLoading = false;
           });
         } else {
           setState(() {
-            _errorMessage = "No experts found for ${widget.serviceName}";
+            _errorMessage = "No experts found within 8km";
             _isLoading = false;
           });
         }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = "Connection Error. Please check your server.";
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _errorMessage = "Error: Please enable location services";
+        _isLoading = false;
+      });
     }
   }
 
@@ -99,15 +113,20 @@ class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
       itemBuilder: (context, index) {
         final provider = _providers[index];
 
+        // 1. Extract the distance sent by the PHP script
+        // We use double.tryParse to be safe, then format to 1 decimal place
+        double distanceValue = double.tryParse(provider['distance'].toString()) ?? 0.0;
+        String distanceLabel = "${distanceValue.toStringAsFixed(1)} km away";
+
         return _buildProviderCard(
           context,
           providerData: provider,
-          name: provider['name'] ?? "Expert",
-          subTitle: provider['title'] ?? widget.serviceName,
-          // --- DYNAMIC PRICE CALL ---
+          name: provider['full_name'] ?? "Expert",
+          // 2. Change subTitle to show the distance
+          subTitle: distanceLabel,
           price: _formatPrice(provider['visiting_charges']),
           rating: "4.9",
-          imageUrl: baseUrl + (provider['photo'] ?? ""),
+          imageUrl: baseUrl + (provider['profile_photo_path'] ?? ""),
           isVerified: true,
         );
       },
