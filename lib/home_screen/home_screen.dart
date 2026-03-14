@@ -74,16 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final String _baseUrl =
       "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
 
-  final List<Map<String, dynamic>> services = [
-    {"icon": Icons.cleaning_services, "title": "Cleaning"},
-    {"icon": Icons.electrical_services, "title": "Electric"},
-    {"icon": Icons.plumbing, "title": "Plumbing"},
-    {"icon": Icons.handyman, "title": "Repair"},
-    {"icon": Icons.ac_unit, "title": "AC"},
-    {"icon": Icons.format_paint, "title": "Painting"},
-    {"icon": Icons.local_laundry_service, "title": "Laundry"},
-    {"icon": Icons.more_horiz, "title": "More"},
-  ];
+  List<Map<String, dynamic>> _dynamicServices = [];
 
   @override
   void initState() {
@@ -91,40 +82,76 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchData();
   }
 
-  Future<void> _fetchData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id') ?? 1;
+  Future<void> _fetchServices() async {
+    final response = await http.get(
+      Uri.parse("${_baseUrl}get_services.php"),
+      headers: {"ngrok-skip-browser-warning": "true"},
+    );
 
-      final providersRes = await http.get(
-        Uri.parse("${_baseUrl}get_providers.php"),
-        headers: {"ngrok-skip-browser-warning": "true"},
-      );
-      final bookingRes = await http.get(
-        Uri.parse("${_baseUrl}get_upcoming_booking.php?user_id=$userId"),
-        headers: {"ngrok-skip-browser-warning": "true"},
-      );
-
-      if (!mounted) return;
-
-      if (providersRes.statusCode == 200 && bookingRes.statusCode == 200) {
-        final providersData = json.decode(providersRes.body);
-        final bookingData = json.decode(bookingRes.body);
-
-        setState(() {
-          _dbProviders = providersData['data'] ?? [];
-          _upcomingBooking = (bookingData['status'] == 'success')
-              ? bookingData['data']
-              : null;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Fetch Error: $e");
-      if (mounted) setState(() => _isLoading = false);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        _dynamicServices = List<Map<String, dynamic>>.from(data['data']);
+        _isLoading = false;
+      });
     }
   }
 
+  Future<void> _fetchData() async {
+    try {
+      print("--- Fetching Data Started ---");
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 1;
+
+      // 1. Prepare the API URLs
+      final String providersUrl = "${_baseUrl}get_providers.php";
+      final String bookingUrl = "${_baseUrl}get_upcoming_booking.php?user_id=$userId";
+      final String servicesUrl = "${_baseUrl}get_services.php";
+
+      // 2. Fetch all data simultaneously for better performance
+      final results = await Future.wait([
+        http.get(Uri.parse(providersUrl), headers: {"ngrok-skip-browser-warning": "true"}),
+        http.get(Uri.parse(bookingUrl), headers: {"ngrok-skip-browser-warning": "true"}),
+        http.get(Uri.parse(servicesUrl), headers: {"ngrok-skip-browser-warning": "true"}),
+      ]);
+
+      // 3. Check for errors
+      if (results[0].statusCode != 200) print("Provider API Error: ${results[0].statusCode}");
+      if (results[1].statusCode != 200) print("Booking API Error: ${results[1].statusCode}");
+      if (results[2].statusCode != 200) print("Services API Error: ${results[2].statusCode}");
+
+      if (!mounted) return;
+
+      // 4. Decode JSON data
+      final providersData = json.decode(results[0].body);
+      final bookingData = json.decode(results[1].body);
+      final servicesData = json.decode(results[2].body);
+
+      // DEBUG: Check if services list is actually reaching Flutter
+      print("Services found in DB: ${servicesData['data']}");
+
+      setState(() {
+        // Extract data safely using List.from
+        _dbProviders = List<Map<String, dynamic>>.from(providersData['data'] ?? []);
+
+        _upcomingBooking = (bookingData['status'] == 'success')
+            ? bookingData['data']
+            : null;
+
+        // This is the part that fills your GridView
+        _dynamicServices = List<Map<String, dynamic>>.from(servicesData['data'] ?? []);
+
+        _isLoading = false;
+      });
+
+      print("--- Fetching Data Completed Successfully ---");
+    } catch (e) {
+      debugPrint("CRITICAL FETCH ERROR: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
   // ── Scaffold ──────────────────────────────────────────────
 
   @override
@@ -296,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         onTap: () => showSearch(
           context: context,
-          delegate: ServiceSearchDelegate(services),
+          delegate: ServiceSearchDelegate(_dynamicServices),
         ),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -332,68 +359,95 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Services Grid ─────────────────────────────────────────
 
   Widget _buildServicesGrid() {
+    // 1. Determine how many items to show from the database (Max 7)
+    int dynamicItemsCount = _dynamicServices.length > 7 ? 7 : _dynamicServices.length;
+
+    // 2. Total items in grid will be dynamicItemsCount + 1 (for the "More" button)
+    int totalItems = dynamicItemsCount + 1;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: services.length,
+        itemCount: totalItems,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
-          final service = services[index];
-          final title = service["title"] as String;
-          final style =
-              serviceColors[title] ??
-              const ServiceStyle(
-                bg: Color(0xFFEAEBF5),
-                icon: Color(0xFF33365D),
-              );
+          // ─── CASE 1: THE "MORE" BUTTON (Always the last item) ───
+          if (index == totalItems - 1) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AllServicesScreen(services: _dynamicServices)),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F3F3), // Neutral light grey
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(2, 2)),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.more_horiz, color: Color(0xFF757575), size: 26),
+                    SizedBox(height: 6),
+                    Text(
+                      "More",
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textDark),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // ─── CASE 2: DYNAMIC SERVICES FROM DATABASE ───
+          final service = _dynamicServices[index];
+          final String title = service["title"] ?? "Service";
+
+          // Use our helper functions for colors and icons
+          final Color bgColor = getColorFromHex(service['bg_color'] ?? "#EAEBF5");
+          final Color iconColor = getColorFromHex(service['icon_color'] ?? "#33365D");
 
           return GestureDetector(
             onTap: () {
-              if (title == "More") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AllServicesScreen()),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ServiceProvidersScreen(serviceName: title),
-                  ),
-                );
-              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ServiceProvidersScreen(serviceName: title),
+                ),
+              );
             },
             child: Container(
               decoration: BoxDecoration(
-                color: style.bg,
+                color: bgColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 12,
-                    offset: const Offset(4, 4),
-                  ),
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 2,
-                    offset: const Offset(-4, -4),
-                  ),
+                  BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(2, 2)),
                 ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(service["icon"], color: style.icon, size: 26),
+                  // 🔥 FIX: Use the helper function to convert the DB string to an IconData
+                  Icon(
+                      getIconFromString(service['icon_name']),
+                      color: iconColor,
+                      size: 26
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     title,
-                    style: TextStyle(
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textDark,
@@ -995,3 +1049,125 @@ class ServiceSearchDelegate extends SearchDelegate {
     );
   }
 }
+// MAKE SURE THESE ARE OUTSIDE OF ANY CLASS
+IconData getIconFromString(String? iconName) {
+  switch (iconName?.toLowerCase().trim()) {
+    case 'cleaning_services':
+    case 'cleaning':
+      return Icons.cleaning_services;
+    case 'electrical_services':
+    case 'electric':
+    case 'electricity':
+      return Icons.electrical_services;
+    case 'plumbing':
+      return Icons.plumbing;
+    case 'handyman':
+    case 'repair':
+      return Icons.handyman;
+    case 'ac_unit':
+    case 'ac':
+      return Icons.ac_unit;
+    case 'format_paint':
+    case 'painting':
+      return Icons.format_paint;
+    case 'local_laundry_service':
+    case 'laundry':
+      return Icons.local_laundry_service;
+    default:
+    // This will show a generic icon so you know the helper is working
+    // but the name didn't match.
+      return Icons.category_outlined;
+  }
+}
+
+Color getColorFromHex(String hexColor) {
+  try {
+    hexColor = hexColor.replaceAll("#", "");
+    if (hexColor.length == 6) hexColor = "FF$hexColor";
+    return Color(int.parse(hexColor, radix: 16));
+  } catch (e) {
+    return const Color(0xFFEAEBF5); // Fallback color
+  }
+}
+
+class AllServicesScreen extends StatelessWidget {
+  // We pass the full list of services to this screen
+  final List<Map<String, dynamic>> services;
+
+  const AllServicesScreen({super.key, required this.services});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F7FB), // Matches your home background
+      appBar: AppBar(
+        title: const Text(
+          "All Services",
+          style: TextStyle(color: Color(0xFF1A1C3A), fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1C3A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: services.length,
+        itemBuilder: (context, index) {
+          final s = services[index];
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: getColorFromHex(s['bg_color']),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  getIconFromString(s['icon_name']),
+                  color: getColorFromHex(s['icon_color']),
+                  size: 24,
+                ),
+              ),
+              title: Text(
+                s['title'] ?? "Service",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF1A1C3A),
+                ),
+              ),
+              subtitle: const Text("Professional service providers available"),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ServiceProvidersScreen(serviceName: s['title']),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
