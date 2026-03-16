@@ -135,7 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         // Extract data safely using List.from
-        _dbProviders = List<Map<String, dynamic>>.from(providersData['data'] ?? []);
+        _dbProviders = providersData['data'] != null
+            ? List<Map<String, dynamic>>.from(providersData['data'])
+            : [];
 
         _upcomingBooking = (bookingData['status'] == 'success')
             ? bookingData['data']
@@ -678,11 +680,24 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Recommended List ──────────────────────────────────────
 
   Widget _buildRecommendedList() {
+
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.all(20),
         child: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    if (_dbProviders.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: Center(
+          child: Text(
+            "No recommended providers yet",
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
@@ -694,29 +709,37 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         itemCount: _dbProviders.length,
         itemBuilder: (context, index) {
+
           final item = _dbProviders[index];
+
+          double lat = double.tryParse(item['latitude'] ?? "0") ?? 0;
+          double lng = double.tryParse(item['longitude'] ?? "0") ?? 0;
+
           return GestureDetector(
             onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ServiceProviderDetailScreen(
-                provider: item,
-                latitude: double.parse(item['latitude']),
-                longitude: double.parse(item['longitude']),
+              context,
+              MaterialPageRoute(
+                builder: (_) => ServiceProviderDetailScreen(
+                  provider: item,
+                  latitude: lat,
+                  longitude: lng,
+                ),
               ),
             ),
-          ),
             child: Container(
               width: 180,
               margin: const EdgeInsets.only(right: 16),
               decoration: BoxDecoration(
                 color: AppColors.cardBg,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12)],
+                boxShadow: [
+                  BoxShadow(color: AppColors.shadow, blurRadius: 12)
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
@@ -729,59 +752,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       errorBuilder: (c, e, s) => Container(
                         height: 130,
                         color: AppColors.iconBg,
-                        child: Icon(
-                          Icons.person,
-                          color: AppColors.primary,
-                          size: 40,
-                        ),
+                        child: const Icon(Icons.person, size: 40),
                       ),
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
                     child: Text(
                       item['name'] ?? 'Provider',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: AppColors.textDark,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       item['title'] ?? 'Professional',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMedium,
-                      ),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
+
                   const SizedBox(height: 8),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.star_rounded,
-                          color: AppColors.star,
-                          size: 15,
-                        ),
+                        const Icon(Icons.star, size: 15, color: Colors.orange),
                         const SizedBox(width: 3),
                         Text(
                           item['rating']?.toString() ?? "4.9",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark,
-                          ),
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
