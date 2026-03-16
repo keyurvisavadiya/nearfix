@@ -42,7 +42,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final int userId = prefs.getInt('user_id') ?? 9;
+      final int? userId = prefs.getInt('user_id') ;
       final url =
           "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/get_all_bookings.php?user_id=$userId";
       final response = await http.get(
@@ -190,29 +190,61 @@ class _BookingsScreenState extends State<BookingsScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        height: 48,
-        padding: const EdgeInsets.all(4),
+        height: 54, // Slightly taller for better touch area
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              color: _primary.withOpacity(0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: Row(
+        child: Stack(
           children: [
-            _tabBtn("Upcoming", isUpcoming, Icons.upcoming_rounded, () {
-              setState(() => isUpcoming = true);
-              _animController.forward(from: 0);
-            }),
-            _tabBtn("History", !isUpcoming, Icons.history_rounded, () {
-              setState(() => isUpcoming = false);
-              _animController.forward(from: 0);
-            }),
+            // ── The Sliding Background Indicator
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic, // Gives it a nice "bounce" effect
+              alignment: isUpcoming ? Alignment.centerLeft : Alignment.centerRight,
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── The actual buttons
+            Row(
+              children: [
+                _tabBtn("Upcoming", isUpcoming, Icons.auto_awesome_rounded, () {
+                  if (!isUpcoming) {
+                    setState(() => isUpcoming = true);
+                    _animController.forward(from: 0);
+                  }
+                }),
+                _tabBtn("History", !isUpcoming, Icons.history_rounded, () {
+                  if (isUpcoming) {
+                    setState(() => isUpcoming = false);
+                    _animController.forward(from: 0);
+                  }
+                }),
+              ],
+            ),
           ],
         ),
       ),
@@ -223,28 +255,23 @@ class _BookingsScreenState extends State<BookingsScreen>
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: active ? _primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        behavior: HitTestBehavior.opaque, // Makes the whole area clickable
+        child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 16,
-                color: active ? Colors.white : const Color(0xFFB0B2C8),
+                size: 18,
+                color: active ? Colors.white : const Color(0xFF94A3B8),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  color: active ? Colors.white : const Color(0xFFB0B2C8),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  color: active ? Colors.white : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
               ),
             ],
@@ -253,7 +280,6 @@ class _BookingsScreenState extends State<BookingsScreen>
       ),
     );
   }
-
   // ── Content ────────────────────────────────────────────────
 
   Widget _buildContent() {

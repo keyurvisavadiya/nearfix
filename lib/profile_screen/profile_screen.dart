@@ -69,7 +69,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+
+    // ❌ DON'T DO THIS: await prefs.clear();
+
+    // ✅ DO THIS: Only remove login/user data
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.remove('userName');
+    await prefs.remove('user_id');
+    await prefs.remove('profile_pic');
+
+    // This keeps 'onboarding_seen' intact!
+
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -77,7 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           (route) => false,
     );
   }
-
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -180,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Added v=timestamp to bypass cache
       profileImage = NetworkImage("$_baseUrl$_profilePic?v=${DateTime.now().millisecondsSinceEpoch}");
     } else {
-      profileImage = const NetworkImage('');
+      profileImage = const AssetImage('assets/pf.png');
     }
 
     return Container(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nearfix/chat_screen/chatscreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart'; // ✅ Added
 
 const Color _primary = Color(0xFF33365D);
 const Color _accent = Color(0xFF6366F1);
@@ -51,7 +52,33 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     }
   }
 
-  // Status config helper
+  // ✅ Function to handle the call logic
+  Future<void> _makePhoneCall(String? phoneNumber) async {
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Phone number not available")),
+      );
+      return;
+    }
+
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        throw 'Could not launch $launchUri';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Unable to open phone dialer")),
+      );
+    }
+  }
+
   _StatusCfg _cfg(String s) {
     switch (s.toLowerCase()) {
       case 'confirmed':
@@ -98,10 +125,10 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     final String rawStatus = (bookingData?['status'] ?? "Pending").toString();
     final bool canCancel =
         rawStatus.toLowerCase() == 'confirmed' ||
-        rawStatus.toLowerCase() == 'pending';
+            rawStatus.toLowerCase() == 'pending';
     final cfg = _cfg(rawStatus);
 
-    // Provider photo
+    // Provider photo logic using the new path from PHP
     String? photoPath = bookingData!['profile_photo_path'];
     String? fullImageUrl;
     if (photoPath != null && photoPath.isNotEmpty) {
@@ -115,10 +142,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       backgroundColor: _bg,
       body: Column(
         children: [
-          // ── Hero header
           _buildHero(context, cfg, rawStatus),
-
-          // ── Scrollable content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -152,8 +176,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     );
   }
 
-  // ── Hero ──────────────────────────────────────────────────
-
   Widget _buildHero(BuildContext context, _StatusCfg cfg, String rawStatus) {
     return Container(
       width: double.infinity,
@@ -170,7 +192,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back button
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
@@ -180,23 +201,13 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
+                  BoxShadow(color: Color(0x0D000000), blurRadius: 6, offset: Offset(0, 2)),
                 ],
               ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 16,
-                color: cfg.color,
-              ),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: cfg.color),
             ),
           ),
           const SizedBox(height: 20),
-
-          // Status icon + text
           Row(
             children: [
               Container(
@@ -206,11 +217,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0D000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
+                    BoxShadow(color: Color(0x0D000000), blurRadius: 8, offset: Offset(0, 3)),
                   ],
                 ),
                 child: Icon(cfg.icon, color: cfg.color, size: 26),
@@ -220,22 +227,9 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      cfg.label,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: cfg.color,
-                      ),
-                    ),
+                    Text(cfg.label, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: cfg.color)),
                     const SizedBox(height: 3),
-                    Text(
-                      "REF# ${widget.bookingId}",
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF6B6D88),
-                      ),
-                    ),
+                    Text("REF# ${widget.bookingId}", style: const TextStyle(fontSize: 13, color: Color(0xFF6B6D88))),
                   ],
                 ),
               ),
@@ -245,8 +239,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       ),
     );
   }
-
-  // ── Service section ───────────────────────────────────────
 
   Widget _serviceSection() {
     final name = bookingData!['service_name'] ?? "Service";
@@ -270,30 +262,13 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1C3A),
-                  ),
-                ),
+                Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A1C3A))),
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 12,
-                      color: Color(0xFF6B6D88),
-                    ),
+                    const Icon(Icons.calendar_today_rounded, size: 12, color: Color(0xFF6B6D88)),
                     const SizedBox(width: 5),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B6D88),
-                      ),
-                    ),
+                    Text(date, style: const TextStyle(fontSize: 12, color: Color(0xFF6B6D88))),
                   ],
                 ),
               ],
@@ -303,8 +278,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       ),
     );
   }
-
-  // ── Provider section ──────────────────────────────────────
 
   Widget _providerSection(String pName, String? imageUrl) {
     final pId = bookingData!['provider_id'];
@@ -326,38 +299,23 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  pName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1C3A),
-                  ),
-                ),
+                Text(pName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1C3A))),
                 const SizedBox(height: 3),
-                Row(
-                  children: const [
-                    Icon(
-                      Icons.verified_rounded,
-                      size: 13,
-                      color: Color(0xFF22C55E),
-                    ),
+                const Row(
+                  children: [
+                    Icon(Icons.verified_rounded, size: 13, color: Color(0xFF22C55E)),
                     SizedBox(width: 4),
-                    Text(
-                      "Verified Provider",
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B6D88)),
-                    ),
+                    Text("Verified Provider", style: TextStyle(fontSize: 12, color: Color(0xFF6B6D88))),
                   ],
                 ),
               ],
             ),
           ),
-          // Chat button
           _actionBtn(
             Icons.chat_bubble_rounded,
             const Color(0xFFEEEDFD),
             _accent,
-            () async {
+                () async {
               if (pId == null) return;
               final prefs = await SharedPreferences.getInstance();
               final int myId = prefs.getInt('user_id') ?? 1;
@@ -378,38 +336,29 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
             },
           ),
           const SizedBox(width: 8),
+          // ✅ Working Call Button
           _actionBtn(
             Icons.call_rounded,
             const Color(0xFFDCFCE7),
             const Color(0xFF22C55E),
-            () {},
+                () => _makePhoneCall(bookingData!['provider_phone']),
           ),
         ],
       ),
     );
   }
 
-  Widget _actionBtn(
-    IconData icon,
-    Color bg,
-    Color iconColor,
-    VoidCallback onTap,
-  ) {
+  Widget _actionBtn(IconData icon, Color bg, Color iconColor, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: iconColor, size: 18),
       ),
     );
   }
-
-  // ── Payment section ───────────────────────────────────────
 
   Widget _paymentSection(String? payId, dynamic amount) {
     return _card(
@@ -417,35 +366,16 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       Icons.receipt_long_rounded,
       Column(
         children: [
-          _infoRow(
-            "Transaction ID",
-            (payId == null || payId.isEmpty) ? "Pending" : payId,
-          ),
+          _infoRow("Transaction ID", (payId == null || payId.isEmpty) ? "Pending" : payId),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAEBF5),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFEAEBF5), borderRadius: BorderRadius.circular(12)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Total Amount",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1C3A),
-                  ),
-                ),
-                Text(
-                  "₹$amount",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: _primary,
-                  ),
-                ),
+                const Text("Total Amount", style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF1A1C3A))),
+                Text("₹$amount", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _primary)),
               ],
             ),
           ),
@@ -453,8 +383,6 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       ),
     );
   }
-
-  // ── Location section ──────────────────────────────────────
 
   Widget _locationSection(String address) {
     return _card(
@@ -465,37 +393,21 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEE2E2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: Color(0xFFEF4444),
-              size: 20,
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFFEE2E2), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.location_on_rounded, color: Color(0xFFEF4444), size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              address,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF1A1C3A),
-                height: 1.4,
-              ),
-            ),
+            child: Text(address, style: const TextStyle(fontSize: 14, color: Color(0xFF1A1C3A), height: 1.4)),
           ),
         ],
       ),
     );
   }
 
-  // ── Cancel button ─────────────────────────────────────────
-
   Widget _cancelBtn(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {}, // Next step: logic for cancelling
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -509,21 +421,12 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
           children: [
             Icon(Icons.cancel_rounded, color: Color(0xFFEF4444), size: 18),
             SizedBox(width: 8),
-            Text(
-              "Cancel Booking",
-              style: TextStyle(
-                color: Color(0xFFEF4444),
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-            ),
+            Text("Cancel Booking", style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700, fontSize: 15)),
           ],
         ),
       ),
     );
   }
-
-  // ── Shared card wrapper ───────────────────────────────────
 
   Widget _card(String title, IconData titleIcon, Widget child) {
     return Container(
@@ -532,30 +435,12 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 12, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B6D88),
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
+          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF6B6D88), letterSpacing: 1.0)),
           const SizedBox(height: 14),
           child,
         ],
@@ -567,21 +452,8 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF6B6D88)),
-        ),
-        Flexible(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1C3A),
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF6B6D88))),
+        Flexible(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1C3A)), textAlign: TextAlign.right)),
       ],
     );
   }

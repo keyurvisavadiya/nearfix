@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:introduction_screen/introduction_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../authentication/sign_in.dart';
 import '../home_screen/home_screen.dart';
 const Color primaryBtnColor = Color.fromARGB(255, 51, 54, 93);
 
@@ -30,12 +31,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_seen', true);
 
+    // Check if they are already logged in (unlikely on first run, but good practice)
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(
+        // ✅ If not logged in, send them to LoginScreen after onboarding
+        builder: (_) => isLoggedIn ? const HomeScreen() : const LoginScreen(),
+      ),
     );
   }
-
   PageViewModel _buildPage(String image) {
     return PageViewModel(
       title: "",
