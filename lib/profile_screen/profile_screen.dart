@@ -73,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // ❌ DON'T DO THIS: await prefs.clear();
 
     // ✅ DO THIS: Only remove login/user data
+
     await prefs.setBool('isLoggedIn', false);
     await prefs.remove('userName');
     await prefs.remove('user_id');
