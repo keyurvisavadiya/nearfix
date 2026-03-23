@@ -37,10 +37,12 @@ class _AddressScreenState extends State<AddressScreen> {
       final decoded = jsonDecode(response.body);
 
       if (decoded['success'] == true) {
+        // Inside fetchAddresses() -> decoded['success'] == true block
         setState(() {
           addresses = List<Map<String, dynamic>>.from(
             decoded['data'].map(
-              (addr) => {
+                  (addr) => {
+                "id": addr['id'], // ✅ Crucial: Store the DB ID
                 "title": addr['type'],
                 "address": "${addr['house']}, ${addr['area']}",
                 "icon": addr['type'] == "Home"
@@ -58,28 +60,53 @@ class _AddressScreenState extends State<AddressScreen> {
     }
   }
 
-  // ── TODO: connect to DB when ready ─────────────────────────────
-  // Steps to connect:
-  // 1. Create delete_address.php on your friend's server
-  // 2. POST { address_id: id } to the ngrok URL
-  // 3. Replace the setState below with the http.post call
   Future<void> _deleteAddress(int index) async {
-    // UI-only for now — removes from local list instantly
+    final addressId = addresses[index]['id'];
+    final removedAddress = addresses[index];
+
+    // 1. Optimistic UI update
     setState(() {
       addresses.removeAt(index);
-      // keep selectedIndex in bounds
       if (selectedAddressIndex >= addresses.length) {
         selectedAddressIndex = addresses.isEmpty ? 0 : addresses.length - 1;
       }
     });
 
-    // ── Uncomment and fill in when DB is ready ──────────────────
-    // final url = "https://YOUR_NGROK_URL/nearfix/delete_address.php";
-    // await http.post(Uri.parse(url),
-    //   headers: {"ngrok-skip-browser-warning": "true"},
-    //   body: {"address_id": addresses[index]['id'].toString()},
-    // );
-    // fetchAddresses(); // refresh from DB
+    const url = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/delete_address.php";
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+          // ✅ Tell PHP this is a standard form submission
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: {
+          "address_id": addressId.toString(),
+        },
+      );
+
+      // DEBUG: Check exactly what the server says
+      debugPrint("SERVER RESPONSE: ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      if (data['success'] != true) {
+        setState(() {
+          addresses.insert(index, removedAddress);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? "Failed to delete")),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        addresses.insert(index, removedAddress);
+      });
+    }
   }
 
   Color _iconColor(String title) {

@@ -510,14 +510,20 @@ class _BookingsScreenState extends State<BookingsScreen>
                       ],
                       // ───────────────────────────────────────────────
 
+                      // Update inside _bookingCard
                       _solidBtn(
                         isUpcoming ? "Details" : "View",
-                            () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BookingDetailsUI(bookingId: b['id'].toString()),
-                          ),
-                        ),
+                            () async {
+                          // 1. Wait for the user to return
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BookingDetailsUI(bookingId: b['id'].toString()),
+                            ),
+                          );
+                          // 2. Refresh the list to catch the 'cancelled' status
+                          _fetchBookings();
+                        },
                       ),
                     ],
                   ),

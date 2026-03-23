@@ -51,6 +51,54 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       if (mounted) setState(() => isLoading = false);
     }
   }
+  Future<void> _handleCancel() async {
+    // Show confirmation dialog first
+    bool confirm = await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Cancel Booking?"),
+        content: const Text("Are you sure you want to cancel this service?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("No")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (!confirm) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse("${_baseUrl}cancel_booking.php"),
+        body: {"booking_id": widget.bookingId},
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Booking Cancelled"), backgroundColor: Colors.red),
+        );
+        // Refresh the UI to show the new status
+        _fetchBookingDetails();
+      } else {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(decoded['message'] ?? "Error cancelling")),
+        );
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Network error")),
+      );
+    }
+  }
 
   // ✅ Function to handle the call logic
   Future<void> _makePhoneCall(String? phoneNumber) async {
@@ -501,7 +549,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
 
   Widget _cancelBtn(BuildContext context) {
     return GestureDetector(
-      onTap: () {}, // Next step: logic for cancelling
+      onTap: _handleCancel, // ✅ Now connected to the logic
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
