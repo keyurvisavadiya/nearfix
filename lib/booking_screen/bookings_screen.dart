@@ -116,7 +116,11 @@ class _BookingsScreenState extends State<BookingsScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _RatingSheet(booking: booking),
-    );
+    ).then((value) {
+      if (value == true) {
+        _fetchBookings(); // ✅ refresh list
+      }
+    });
   }
 
   // ── Build ──────────────────────────────────────────────────
@@ -362,7 +366,13 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
+  // ... (previous imports and constants remain the same)
+
   Widget _bookingCard(Map b, String status, _StatusConfig config) {
+    // Determine if the booking has already been rated
+    // We handle both String and Int types just in case
+    final bool alreadyRated = b['is_rated']?.toString() == '1';
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -381,11 +391,6 @@ class _BookingsScreenState extends State<BookingsScreen>
               blurRadius: 16,
               offset: Offset(0, 5),
             ),
-            BoxShadow(
-              color: Color(0x04000000),
-              blurRadius: 4,
-              offset: Offset(0, 1),
-            ),
           ],
         ),
         child: Column(
@@ -395,9 +400,7 @@ class _BookingsScreenState extends State<BookingsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: config.bg,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
@@ -415,11 +418,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                   const Spacer(),
                   Text(
                     "REF# ${b['id']}",
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF6B6D88),
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF6B6D88)),
                   ),
                 ],
               ),
@@ -441,11 +440,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                           color: const Color(0xFFEAEBF5),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(
-                          Icons.home_repair_service_rounded,
-                          color: _primary,
-                          size: 22,
-                        ),
+                        child: const Icon(Icons.home_repair_service_rounded, color: _primary, size: 22),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -454,30 +449,19 @@ class _BookingsScreenState extends State<BookingsScreen>
                           children: [
                             Text(
                               b['service_name'] ?? 'Service',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF1A1C3A),
-                              ),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF1A1C3A)),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               b['provider_name'] ?? 'Provider',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6B6D88),
-                              ),
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF6B6D88)),
                             ),
                           ],
                         ),
                       ),
                       Text(
                         "₹${b['amount'] ?? '—'}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: _primary,
-                        ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _primary),
                       ),
                     ],
                   ),
@@ -486,35 +470,52 @@ class _BookingsScreenState extends State<BookingsScreen>
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 13,
-                        color: Color(0xFF6B6D88),
-                      ),
+                      const Icon(Icons.calendar_today_rounded, size: 13, color: Color(0xFF6B6D88)),
                       const SizedBox(width: 6),
                       Text(
                         b['booking_date'] ?? 'TBD',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B6D88),
-                        ),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B6D88)),
                       ),
                       const Spacer(),
+
+                      // ── Updated Rating Logic ────────────────────────
                       if (status.toLowerCase() == 'completed') ...[
-                        _outlineBtn(
-                          "Rate",
-                          Icons.star_rounded,
-                          () => _showRatingSheet(b),
-                        ),
-                        const SizedBox(width: 8),
+                        if (!alreadyRated) ...[
+                          _outlineBtn(
+                            "Rate",
+                            Icons.star_rounded,
+                                () => _showRatingSheet(b),
+                          ),
+                          const SizedBox(width: 8),
+                        ] else ...[
+                          // Show "Rated" label instead of button
+                          const Padding(
+                            padding: EdgeInsets.only(right: 12.0),
+                            child: Row(
+                              children: [
+                                Icon(Icons.stars_rounded, color: Color(0xFF22C55E), size: 16),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Rated",
+                                  style: TextStyle(
+                                    color: Color(0xFF22C55E),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
+                      // ───────────────────────────────────────────────
+
                       _solidBtn(
                         isUpcoming ? "Details" : "View",
-                        () => Navigator.push(
+                            () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                BookingDetailsUI(bookingId: b['id'].toString()),
+                            builder: (_) => BookingDetailsUI(bookingId: b['id'].toString()),
                           ),
                         ),
                       ),
@@ -528,6 +529,7 @@ class _BookingsScreenState extends State<BookingsScreen>
       ),
     );
   }
+// ... (rest of the helper buttons and RatingSheet remain the same)
 
   Widget _solidBtn(String label, VoidCallback onTap) {
     return GestureDetector(
@@ -641,41 +643,53 @@ class _RatingSheetState extends State<_RatingSheet> {
 
   Future<void> _submit() async {
     if (_stars == 0) return;
+
     setState(() => _submitting = true);
 
-    // ── UI only for now ──────────────────────────────────────
-    // TODO: uncomment after submit_rating.php is ready
-    //
-    // final prefs  = await SharedPreferences.getInstance();
-    // final userId = prefs.getInt('user_id');
-    // await http.post(
-    //   Uri.parse("https://YOUR_NGROK/nearfix/submit_rating.php"),
-    //   headers: {"ngrok-skip-browser-warning": "true"},
-    //   body: {
-    //     "booking_id":  widget.booking['id'].toString(),
-    //     "provider_id": widget.booking['provider_id'].toString(),
-    //     "user_id":     userId.toString(),
-    //     "stars":       _stars.toString(),
-    //     "comment":     _commentCtrl.text.trim(),
-    //   },
-    // );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
 
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
+      final response = await http.post(
+        Uri.parse("https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/submit_review.php"), // ✅ YOUR API
+        headers: {"ngrok-skip-browser-warning": "true"},
+        body: {
+          "booking_id": widget.booking['id'].toString(),
+          "provider_id": widget.booking['provider_id'].toString(),
+          "user_id": userId.toString(),
+          "rating": _stars.toString(),
+          "review": _commentCtrl.text.trim(),
+        },
+      );
 
-    // Capture messenger BEFORE pop — in release mode the widget
-    // is disposed immediately after pop, making context invalid
-    final messenger = ScaffoldMessenger.of(context);
-    Navigator.pop(context);
+      final data = jsonDecode(response.body);
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: const Text("Thanks for your rating! ⭐"),
-        backgroundColor: const Color(0xFF22C55E),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+      if (!mounted) return;
+
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.pop(context, true); // ✅ IMPORTANT (return true)
+
+      if (data['success'] == true) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text("Rating submitted ⭐"),
+            backgroundColor: Color(0xFF22C55E),
+          ),
+        );
+      } else {
+        messenger.showSnackBar(
+          SnackBar(content: Text(data['message'] ?? "Failed")),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Network error")),
+      );
+    }
   }
 
   @override
