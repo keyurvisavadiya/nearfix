@@ -37,7 +37,6 @@ class MyApp extends StatelessWidget {
             );
           }
 
-
           // Decide which screen to show based on the saved data
           if (snapshot.data == 'onboarding') {
             return const OnboardingScreen();

@@ -42,7 +42,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final int? userId = prefs.getInt('user_id') ;
+      final int? userId = prefs.getInt('user_id');
       final url =
           "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/get_all_bookings.php?user_id=$userId";
       final response = await http.get(
@@ -79,7 +79,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // Status config
   _StatusConfig _statusConfig(String s) {
     switch (s.toLowerCase()) {
       case 'confirmed':
@@ -110,6 +109,17 @@ class _BookingsScreenState extends State<BookingsScreen>
     }
   }
 
+  // ── Rate bottom sheet ──────────────────────────────────────
+  void _showRatingSheet(Map booking) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _RatingSheet(booking: booking),
+    );
+  }
+
+  // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,8 +139,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // ── Header ─────────────────────────────────────────────────
-
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -140,7 +148,7 @@ class _BookingsScreenState extends State<BookingsScreen>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 "My Bookings",
                 style: TextStyle(
                   fontSize: 26,
@@ -184,52 +192,48 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // ── Tab Bar ────────────────────────────────────────────────
-
   Widget _buildTabBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        height: 54, // Slightly taller for better touch area
+        height: 54,
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: _primary.withOpacity(0.05),
+              color: Color(0x0D33365D),
               blurRadius: 15,
-              offset: const Offset(0, 5),
+              offset: Offset(0, 5),
             ),
           ],
         ),
         child: Stack(
           children: [
-            // ── The Sliding Background Indicator
             AnimatedAlign(
               duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOutCubic, // Gives it a nice "bounce" effect
-              alignment: isUpcoming ? Alignment.centerLeft : Alignment.centerRight,
+              curve: Curves.easeInOutCubic,
+              alignment: isUpcoming
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
               child: FractionallySizedBox(
                 widthFactor: 0.5,
                 child: Container(
                   decoration: BoxDecoration(
                     color: _primary,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: _primary.withOpacity(0.3),
+                        color: Color(0x4D33365D),
                         blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-
-
-            // ── The actual buttons
             Row(
               children: [
                 _tabBtn("Upcoming", isUpcoming, Icons.auto_awesome_rounded, () {
@@ -256,7 +260,7 @@ class _BookingsScreenState extends State<BookingsScreen>
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque, // Makes the whole area clickable
+        behavior: HitTestBehavior.opaque,
         child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -281,7 +285,6 @@ class _BookingsScreenState extends State<BookingsScreen>
       ),
     );
   }
-  // ── Content ────────────────────────────────────────────────
 
   Widget _buildContent() {
     if (isLoading) {
@@ -359,8 +362,6 @@ class _BookingsScreenState extends State<BookingsScreen>
     );
   }
 
-  // ── Booking Card ───────────────────────────────────────────
-
   Widget _bookingCard(Map b, String status, _StatusConfig config) {
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -373,17 +374,23 @@ class _BookingsScreenState extends State<BookingsScreen>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEEEFF8), width: 1.2),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+              color: Color(0x0A000000),
+              blurRadius: 16,
+              offset: Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Color(0x04000000),
+              blurRadius: 4,
+              offset: Offset(0, 1),
             ),
           ],
         ),
         child: Column(
           children: [
-            // ── Top strip with status color
+            // Status strip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -402,7 +409,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: config.color,
-                      letterSpacing: 0.8,
+                      letterSpacing: .8,
                     ),
                   ),
                   const Spacer(),
@@ -418,13 +425,12 @@ class _BookingsScreenState extends State<BookingsScreen>
               ),
             ),
 
-            // ── Card body
+            // Body
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Service name + price
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -475,12 +481,9 @@ class _BookingsScreenState extends State<BookingsScreen>
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 14),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
                   const SizedBox(height: 12),
-
-                  // Date + action buttons
                   Row(
                     children: [
                       const Icon(
@@ -497,11 +500,12 @@ class _BookingsScreenState extends State<BookingsScreen>
                         ),
                       ),
                       const Spacer(),
-                      // Action buttons
                       if (status.toLowerCase() == 'completed') ...[
-                        _outlineBtn("Rate", Icons.star_rounded, () {
-                          debugPrint("Rating ${b['id']}");
-                        }),
+                        _outlineBtn(
+                          "Rate",
+                          Icons.star_rounded,
+                          () => _showRatingSheet(b),
+                        ),
                         const SizedBox(width: 8),
                       ],
                       _solidBtn(
@@ -531,15 +535,26 @@ class _BookingsScreenState extends State<BookingsScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: _primary,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1C1F3E), Color(0xFF4A4D7A)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           borderRadius: BorderRadius.circular(10),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2633365D),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
         child: Text(
           label,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -552,19 +567,20 @@ class _BookingsScreenState extends State<BookingsScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFEEEDFD),
+          color: const Color(0xFFFEF3C7),
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFDE68A), width: 1),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 13, color: _accent),
+            Icon(icon, size: 13, color: const Color(0xFFF59E0B)),
             const SizedBox(width: 4),
             Text(
               label,
               style: const TextStyle(
-                color: _accent,
+                color: Color(0xFFF59E0B),
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -583,4 +599,305 @@ class _StatusConfig {
     required this.bg,
     required this.icon,
   });
+}
+
+// ════════════════════════════════════════════════════════════════
+// Rating bottom sheet — proper StatefulWidget so controller
+// is disposed correctly and overflow is handled
+// ════════════════════════════════════════════════════════════════
+class _RatingSheet extends StatefulWidget {
+  final Map booking;
+  const _RatingSheet({required this.booking});
+
+  @override
+  State<_RatingSheet> createState() => _RatingSheetState();
+}
+
+class _RatingSheetState extends State<_RatingSheet> {
+  int _stars = 0;
+  bool _submitting = false;
+  late final TextEditingController _commentCtrl;
+
+  static const _labels = [
+    '',
+    '😞 Poor',
+    '😐 Fair',
+    '🙂 Good',
+    '😊 Great',
+    '🤩 Excellent!',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _commentCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_stars == 0) return;
+    setState(() => _submitting = true);
+
+    // ── UI only for now ──────────────────────────────────────
+    // TODO: uncomment after submit_rating.php is ready
+    //
+    // final prefs  = await SharedPreferences.getInstance();
+    // final userId = prefs.getInt('user_id');
+    // await http.post(
+    //   Uri.parse("https://YOUR_NGROK/nearfix/submit_rating.php"),
+    //   headers: {"ngrok-skip-browser-warning": "true"},
+    //   body: {
+    //     "booking_id":  widget.booking['id'].toString(),
+    //     "provider_id": widget.booking['provider_id'].toString(),
+    //     "user_id":     userId.toString(),
+    //     "stars":       _stars.toString(),
+    //     "comment":     _commentCtrl.text.trim(),
+    //   },
+    // );
+
+    await Future.delayed(const Duration(milliseconds: 700));
+    if (!mounted) return;
+
+    // Capture messenger BEFORE pop — in release mode the widget
+    // is disposed immediately after pop, making context invalid
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.pop(context);
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text("Thanks for your rating! ⭐"),
+        backgroundColor: const Color(0xFF22C55E),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final kb = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 14, 24, 32 + kb),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            width: 32,
+            height: 3,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0E1F0),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.star_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Rate your experience",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1C3A),
+                        letterSpacing: -.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.booking['service_name'] ?? 'Service',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9B9DB8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // Stars
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final filled = i < _stars;
+              return GestureDetector(
+                onTap: () => setState(() => _stars = i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child: Icon(
+                      key: ValueKey(filled),
+                      filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 44,
+                      color: filled
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFFDDE0F0),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Label
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              _stars == 0 ? "Tap a star to rate" : _labels[_stars],
+              key: ValueKey(_stars),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _stars == 0
+                    ? const Color(0xFFCCCDDF)
+                    : const Color(0xFFF59E0B),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Comment
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F5FB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFEAEBF5), width: 1.2),
+            ),
+            child: TextField(
+              controller: _commentCtrl,
+              maxLines: 3,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1A1C3A)),
+              decoration: const InputDecoration(
+                hintText: "Share your experience (optional)...",
+                hintStyle: TextStyle(color: Color(0xFFCCCDDF), fontSize: 14),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.all(14),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Buttons
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F5FB),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE0E1F0)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6B6D88),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: _stars == 0 || _submitting ? null : _submit,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: _stars > 0
+                          ? const LinearGradient(
+                              colors: [Color(0xFF1C1F3E), Color(0xFF4A4D7A)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            )
+                          : null,
+                      color: _stars == 0 ? const Color(0xFFE8E9F5) : null,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: _stars > 0
+                          ? const [
+                              BoxShadow(
+                                color: Color(0x3333365D),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Center(
+                      child: _submitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              "Submit Rating",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: _stars == 0
+                                    ? const Color(0xFFAAABC0)
+                                    : Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

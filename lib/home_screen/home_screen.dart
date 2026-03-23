@@ -84,7 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchData();
   }
 
-
   Future<void> _fetchServices() async {
     final response = await http.get(
       Uri.parse("${_baseUrl}get_services.php"),
@@ -108,20 +107,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 1. Prepare the API URLs
       final String providersUrl = "${_baseUrl}get_providers.php";
-      final String bookingUrl = "${_baseUrl}get_upcoming_booking.php?user_id=$userId";
+      final String bookingUrl =
+          "${_baseUrl}get_upcoming_booking.php?user_id=$userId";
       final String servicesUrl = "${_baseUrl}get_services.php";
 
       // 2. Fetch all data simultaneously for better performance
       final results = await Future.wait([
-        http.get(Uri.parse(providersUrl), headers: {"ngrok-skip-browser-warning": "true"}),
-        http.get(Uri.parse(bookingUrl), headers: {"ngrok-skip-browser-warning": "true"}),
-        http.get(Uri.parse(servicesUrl), headers: {"ngrok-skip-browser-warning": "true"}),
+        http.get(
+          Uri.parse(providersUrl),
+          headers: {"ngrok-skip-browser-warning": "true"},
+        ),
+        http.get(
+          Uri.parse(bookingUrl),
+          headers: {"ngrok-skip-browser-warning": "true"},
+        ),
+        http.get(
+          Uri.parse(servicesUrl),
+          headers: {"ngrok-skip-browser-warning": "true"},
+        ),
       ]);
 
       // 3. Check for errors
-      if (results[0].statusCode != 200) print("Provider API Error: ${results[0].statusCode}");
-      if (results[1].statusCode != 200) print("Booking API Error: ${results[1].statusCode}");
-      if (results[2].statusCode != 200) print("Services API Error: ${results[2].statusCode}");
+      if (results[0].statusCode != 200)
+        print("Provider API Error: ${results[0].statusCode}");
+      if (results[1].statusCode != 200)
+        print("Booking API Error: ${results[1].statusCode}");
+      if (results[2].statusCode != 200)
+        print("Services API Error: ${results[2].statusCode}");
 
       if (!mounted) return;
 
@@ -144,7 +156,9 @@ class _HomeScreenState extends State<HomeScreen> {
             : null;
 
         // This is the part that fills your GridView
-        _dynamicServices = List<Map<String, dynamic>>.from(servicesData['data'] ?? []);
+        _dynamicServices = List<Map<String, dynamic>>.from(
+          servicesData['data'] ?? [],
+        );
 
         _isLoading = false;
       });
@@ -365,7 +379,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildServicesGrid() {
     // 1. Determine how many items to show from the database (Max 7)
-    int dynamicItemsCount = _dynamicServices.length > 7 ? 7 : _dynamicServices.length;
+    int dynamicItemsCount = _dynamicServices.length > 7
+        ? 7
+        : _dynamicServices.length;
 
     // 2. Total items in grid will be dynamicItemsCount + 1 (for the "More" button)
     int totalItems = dynamicItemsCount + 1;
@@ -388,7 +404,10 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => AllServicesScreen(services: _dynamicServices)),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AllServicesScreen(services: _dynamicServices),
+                  ),
                 );
               },
               child: Container(
@@ -396,7 +415,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: const Color(0xFFF3F3F3), // Neutral light grey
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(2, 2)),
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 12,
+                      offset: const Offset(2, 2),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -406,7 +429,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(height: 6),
                     Text(
                       "More",
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textDark),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textDark,
+                      ),
                     ),
                   ],
                 ),
@@ -419,17 +446,25 @@ class _HomeScreenState extends State<HomeScreen> {
           final String title = service["title"] ?? "Service";
 
           // Use our helper functions for colors and icons
-          final Color bgColor = getColorFromHex(service['bg_color'] ?? "#EAEBF5");
-          final Color iconColor = getColorFromHex(service['icon_color'] ?? "#33365D");
+          final Color bgColor = getColorFromHex(
+            service['bg_color'] ?? "#EAEBF5",
+          );
+          final Color iconColor = getColorFromHex(
+            service['icon_color'] ?? "#33365D",
+          );
 
           return GestureDetector(
-            onTap: () => showLocationSelection(context,title),
+            onTap: () => showLocationSelection(context, title),
             child: Container(
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: AppColors.shadow, blurRadius: 12, offset: const Offset(2, 2)),
+                  BoxShadow(
+                    color: AppColors.shadow,
+                    blurRadius: 12,
+                    offset: const Offset(2, 2),
+                  ),
                 ],
               ),
               child: Column(
@@ -437,9 +472,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   // 🔥 FIX: Use the helper function to convert the DB string to an IconData
                   Icon(
-                      getIconFromString(service['icon_name']),
-                      color: iconColor,
-                      size: 26
+                    getIconFromString(service['icon_name']),
+                    color: iconColor,
+                    size: 26,
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -680,7 +715,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Recommended List ──────────────────────────────────────
 
   Widget _buildRecommendedList() {
-
     if (_isLoading) {
       return const Padding(
         padding: EdgeInsets.all(20),
@@ -709,7 +743,6 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         itemCount: _dbProviders.length,
         itemBuilder: (context, index) {
-
           final item = _dbProviders[index];
 
           double lat = double.tryParse(item['latitude'] ?? "0") ?? 0;
@@ -732,14 +765,11 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: AppColors.cardBg,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: AppColors.shadow, blurRadius: 12)
-                ],
+                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 12)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
@@ -1054,6 +1084,7 @@ class ServiceSearchDelegate extends SearchDelegate {
     );
   }
 }
+
 // MAKE SURE THESE ARE OUTSIDE OF ANY CLASS
 IconData getIconFromString(String? iconName) {
   switch (iconName?.toLowerCase().trim()) {
@@ -1079,12 +1110,11 @@ IconData getIconFromString(String? iconName) {
     case 'laundry':
       return Icons.local_laundry_service;
     default:
-    // This will show a generic icon so you know the helper is working
-    // but the name didn't match.
+      // This will show a generic icon so you know the helper is working
+      // but the name didn't match.
       return Icons.category_outlined;
   }
 }
-
 
 Color getColorFromHex(String hexColor) {
   try {
@@ -1095,8 +1125,6 @@ Color getColorFromHex(String hexColor) {
     return const Color(0xFFEAEBF5); // Fallback color
   }
 }
-
-
 
 class AllServicesScreen extends StatelessWidget {
   // We pass the full list of services to this screen
@@ -1111,7 +1139,10 @@ class AllServicesScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           "All Services",
-          style: TextStyle(color: Color(0xFF1A1C3A), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF1A1C3A),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -1140,7 +1171,10 @@ class AllServicesScreen extends StatelessWidget {
               ],
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -1173,6 +1207,7 @@ class AllServicesScreen extends StatelessWidget {
     );
   }
 }
+
 void showLocationSelection(BuildContext context, String serviceName) {
   showModalBottomSheet(
     context: context,
@@ -1186,7 +1221,6 @@ void showLocationSelection(BuildContext context, String serviceName) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             const Text(
               "Where do you need the service?",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -1197,37 +1231,40 @@ void showLocationSelection(BuildContext context, String serviceName) {
             ListTile(
               leading: const Icon(Icons.my_location),
               title: const Text("Use Current Location"),
-                onTap: () async {
+              onTap: () async {
+                LocationPermission permission =
+                    await Geolocator.checkPermission();
 
-                  LocationPermission permission = await Geolocator.checkPermission();
+                if (permission == LocationPermission.denied) {
+                  permission = await Geolocator.requestPermission();
+                }
 
-                  if (permission == LocationPermission.denied) {
-                    permission = await Geolocator.requestPermission();
-                  }
-
-                  if (permission == LocationPermission.deniedForever) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Location permission permanently denied")),
-                    );
-                    return;
-                  }
-
-                  Position position = await Geolocator.getCurrentPosition(
-                      desiredAccuracy: LocationAccuracy.high);
-
-                  Navigator.pop(context); // close bottom sheet AFTER location
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ServiceProvidersScreen(
-                        serviceName: serviceName,
-                        latitude: position.latitude,
-                        longitude: position.longitude,
-                      ),
+                if (permission == LocationPermission.deniedForever) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Location permission permanently denied"),
                     ),
                   );
+                  return;
                 }
+
+                Position position = await Geolocator.getCurrentPosition(
+                  desiredAccuracy: LocationAccuracy.high,
+                );
+
+                Navigator.pop(context); // close bottom sheet AFTER location
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ServiceProvidersScreen(
+                      serviceName: serviceName,
+                      latitude: position.latitude,
+                      longitude: position.longitude,
+                    ),
+                  ),
+                );
+              },
             ),
 
             const Divider(),
@@ -1236,14 +1273,12 @@ void showLocationSelection(BuildContext context, String serviceName) {
               leading: const Icon(Icons.map),
               title: const Text("Select Different Location"),
               onTap: () {
-
                 Navigator.pop(context);
 
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        MapPickerScreen(serviceName: serviceName),
+                    builder: (_) => MapPickerScreen(serviceName: serviceName),
                   ),
                 );
               },
