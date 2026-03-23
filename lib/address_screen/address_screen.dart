@@ -30,7 +30,7 @@ class _AddressScreenState extends State<AddressScreen> {
     if (userId == null) return;
 
     final url =
-        "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
+        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
 
     try {
       final response = await http.get(Uri.parse(url));

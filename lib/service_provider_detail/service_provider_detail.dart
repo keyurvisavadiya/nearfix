@@ -24,7 +24,7 @@ class ServiceProviderDetailScreen extends StatefulWidget {
 class _ServiceProviderDetailScreenState
     extends State<ServiceProviderDetailScreen> {
   final String _baseUrl =
-      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
+      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
 
   @override
   Widget build(BuildContext context) {

@@ -21,7 +21,7 @@ class ServiceProvidersScreen extends StatefulWidget {
 
 class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
   static const Color primaryColor = Color(0xFF33365D);
-  final String baseUrl = "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
+  final String baseUrl = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
 
   List<dynamic> _providers = [];
   bool _isLoading = true;

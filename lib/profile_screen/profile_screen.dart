@@ -30,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   late final Animation<Offset> _slideAnim;
 
   final String _baseUrl =
-      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
+      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
 
   @override
   void initState() {

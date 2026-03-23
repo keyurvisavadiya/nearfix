@@ -44,7 +44,7 @@ class _BookingsScreenState extends State<BookingsScreen>
       final prefs = await SharedPreferences.getInstance();
       final int? userId = prefs.getInt('user_id');
       final url =
-          "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/get_all_bookings.php?user_id=$userId";
+          "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/get_all_bookings.php?user_id=$userId";
       final response = await http.get(
         Uri.parse(url),
         headers: {"ngrok-skip-browser-warning": "true"},

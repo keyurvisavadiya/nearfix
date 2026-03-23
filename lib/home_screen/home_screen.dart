@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
 
   final String _baseUrl =
-      "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/";
+      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
 
   List<Map<String, dynamic>> _dynamicServices = [];
 

@@ -35,7 +35,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
     const String url =
-        "https://sal-unstunted-guadalupe.ngrok-free.dev/nearfix/signup.php";
+        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/signup.php";
     try {
       final response = await http.post(
         Uri.parse(url),
