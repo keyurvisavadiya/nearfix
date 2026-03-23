@@ -749,16 +749,10 @@ class _HomeScreenState extends State<HomeScreen> {
           double lng = double.tryParse(item['longitude'] ?? "0") ?? 0;
 
           return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ServiceProviderDetailScreen(
-                  provider: item,
-                  latitude: lat,
-                  longitude: lng,
-                ),
-              ),
-            ),
+            onTap: () {
+              final String serviceName = item['title'] ?? "Service";
+              showLocationSelection(context, serviceName);
+            },
             child: Container(
               width: 180,
               margin: const EdgeInsets.only(right: 16),
@@ -1050,7 +1044,11 @@ class ServiceSearchDelegate extends SearchDelegate {
                 color: style.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(service["icon"], color: style.icon, size: 22),
+              child: Icon(
+                getIconFromString(service["icon_name"]),
+                color: getColorFromHex(service['icon_color'] ?? "#33365D"),
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
