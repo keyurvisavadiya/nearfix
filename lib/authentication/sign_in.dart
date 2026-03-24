@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:nearfix/authentication/forgot_password_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/authentication/sign_up.dart';
 import 'package:nearfix/home_screen/home_screen.dart';
@@ -206,7 +207,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context)=>ForgotPasswordScreen()));
+                        },
                         child: const Text(
                           "Forgot Password?",
                           style: TextStyle(
