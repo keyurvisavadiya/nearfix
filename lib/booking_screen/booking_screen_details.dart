@@ -52,17 +52,21 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
     }
   }
   Future<void> _handleCancel() async {
-    // Show confirmation dialog first
     bool confirm = await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Cancel Booking?"),
-        content: const Text("Are you sure you want to cancel this service?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Cancel Booking?",
+            style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1A1C3A))),
+        content: const Text("Are you sure? This action cannot be undone."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("No")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("No, Keep it", style: TextStyle(color: Colors.grey))
+          ),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red))
+              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
           ),
         ],
       ),
@@ -81,23 +85,70 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
       final decoded = jsonDecode(response.body);
 
       if (decoded['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Booking Cancelled"), backgroundColor: Colors.red),
-        );
-        // Refresh the UI to show the new status
+        if (mounted) {
+          _showCustomSnackBar(
+              context,
+              "Booking Cancelled Successfully",
+              Icons.check_circle_rounded,
+              Colors.redAccent
+          );
+        }
         _fetchBookingDetails();
       } else {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(decoded['message'] ?? "Error cancelling")),
+        _showCustomSnackBar(
+            context,
+            decoded['message'] ?? "Error cancelling",
+            Icons.error_outline_rounded,
+            _primary
         );
       }
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Network error")),
-      );
+      _showCustomSnackBar(context, "Network error", Icons.wifi_off_rounded, Colors.orange);
     }
+  }
+
+  // ✅ New Custom SnackBar UI helper
+  void _showCustomSnackBar(BuildContext context, String message, IconData icon, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1F3E), // Dark Navy to match your theme
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.5), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ✅ Function to handle the call logic
