@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nearfix/chatbot/chatbot_screen.dart';
 
 const Color _primary = Color(0xFF33365D);
 const Color _bg = Color(0xFFF4F5FB);
@@ -127,7 +128,11 @@ class HelpSupportScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
             child: GestureDetector(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatBotScreen()));
+              },
               child: Container(
                 width: double.infinity,
                 height: 58,
