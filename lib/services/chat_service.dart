@@ -5,7 +5,7 @@ class NearFixChatService {
   // Use 3.1-flash-lite which replaced the older flash models in March 2026
   final model = GenerativeModel(
     model: 'gemini-2.5-flash',
-    apiKey: 'AIzaSyDFURPGALZCfZWBJiswteTUlVVG1zTL85k',
+    apiKey: '',
     systemInstruction: Content.system(
         "You are the NearFix Assistant. Help users with Plumbing, Electrical, "
             "Cleaning, Carpenter, and AC Repair in Ahmedabad. Be brief."
