@@ -45,5 +45,5 @@ app.*.map.json
 /android/app/release
 
 # Sensitive configuration files
-lib/config.dart
+lib/app_config.dart
 .env
