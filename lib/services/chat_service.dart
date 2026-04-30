@@ -2,38 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class NearFixChatService {
-  // Use the most stable model name for 2026 free tier
+  // Use 3.1-flash-lite which replaced the older flash models in March 2026
   final model = GenerativeModel(
     model: 'gemini-2.5-flash',
-    apiKey: 'AIzaSyDniyTPxJE-4nv3yU1N7J6Tam-YzFJ0MEI',
+    apiKey: 'AIzaSyDFURPGALZCfZWBJiswteTUlVVG1zTL85k',
     systemInstruction: Content.system(
-        "You are the NearFix Support Bot. Only answer questions about Plumbing, Electricians, Cleaning, Carpentry, and AC Repair in Ahmedabad."
+        "You are the NearFix Assistant. Help users with Plumbing, Electrical, "
+            "Cleaning, Carpenter, and AC Repair in Ahmedabad. Be brief."
     ),
   );
 
   Future<String> getResponse(String userPrompt) async {
     try {
-      final content = [Content.text(userPrompt)];
-      final response = await model.generateContent(content);
-
-      if (response.text == null) return "I'm sorry, I couldn't generate a response.";
-      return response.text!;
-
+      final response = await model.generateContent([Content.text(userPrompt)]);
+      return response.text ?? "I'm sorry, I couldn't process that.";
     } catch (e) {
-      debugPrint("--- GEMINI DEBUG ERROR ---");
-      debugPrint(e.toString());
+      debugPrint("TECHNICAL ERROR: $e");
 
-      // Handle the "High Demand" 503 error specifically
-      if (e.toString().contains("503") || e.toString().contains("overloaded")) {
-        return "The AI is currently busy (High Demand). Please wait 10 seconds and try again.";
+      // Detailed error breakdown
+      if (e.toString().contains("503")) {
+        return "AI is busy (High Demand). Please try again in 10 seconds.";
+      } else if (e.toString().contains("403")) {
+        return "API Key Error. Please generate a NEW key in AI Studio.";
+      } else if (e.toString().contains("404")) {
+        return "Model not found. Updating to gemini-3.1-flash-lite-preview...";
       }
 
-      // Handle API Key issues
-      if (e.toString().contains("403")) {
-        return "API Key error. Please verify your key in Google AI Studio.";
-      }
-
-      return "Connection error. Check your internet or try again later.";
+      return "Connection error. Please check your internet or VPN.";
     }
   }
 }
