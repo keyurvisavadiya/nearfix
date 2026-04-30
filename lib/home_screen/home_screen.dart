@@ -9,6 +9,7 @@ import 'package:nearfix/service_provider_detail/service_provider_detail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../address_screen/address_screen.dart';
 import '../all_service_providers/all_service_providers.dart';
+import '../app_config.dart';
 import '../chat_screen/chat_screen_tile.dart';
 import '../map/map_picker_screen.dart';
 import '../notifications/notifications.dart';
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
 
   final String _baseUrl =
-      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+      "${AppConfig.baseUrl}/";
 
   List<Map<String, dynamic>> _dynamicServices = [];
 

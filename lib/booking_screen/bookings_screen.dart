@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/booking_screen/booking_screen_details.dart';
 
+import '../app_config.dart';
+
 const Color _primary = Color(0xFF33365D);
 const Color _accent = Color(0xFF6366F1);
 const Color _bg = Color(0xFFF6F7FB);
@@ -44,7 +46,7 @@ class _BookingsScreenState extends State<BookingsScreen>
       final prefs = await SharedPreferences.getInstance();
       final int? userId = prefs.getInt('user_id');
       final url =
-          "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/get_all_bookings.php?user_id=$userId";
+          "${AppConfig.baseUrl}/get_all_bookings.php?user_id=$userId";
       final response = await http.get(
         Uri.parse(url),
         headers: {"ngrok-skip-browser-warning": "true"},
@@ -657,7 +659,7 @@ class _RatingSheetState extends State<_RatingSheet> {
       final userId = prefs.getInt('user_id');
 
       final response = await http.post(
-        Uri.parse("https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/submit_review.php"), // ✅ YOUR API
+        Uri.parse("${AppConfig.baseUrl}/submit_review.php"), // ✅ YOUR API
         headers: {"ngrok-skip-browser-warning": "true"},
         body: {
           "booking_id": widget.booking['id'].toString(),

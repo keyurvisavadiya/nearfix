@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app_config.dart';
+
 class ProviderChatMessageScreen extends StatefulWidget {
   final int currentUserId;
   final int peerId;
@@ -37,8 +39,8 @@ class _ProviderChatMessageScreenState extends State<ProviderChatMessageScreen> {
   String? _serverImageUrl;
   int _unreadFromPeer = 0; // Tracks unread messages for the AppBar badge
 
-  final String _baseUrl = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
-  final String _handlerUrl = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/chat_handler.php";
+  final String _baseUrl = "${AppConfig.baseUrl}/";
+  final String _handlerUrl = "${AppConfig.baseUrl}/chat_handler.php";
 
   @override
   void initState() {

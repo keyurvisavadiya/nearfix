@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../app_config.dart';
+
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
   const ResetPasswordScreen({super.key, required this.email});
@@ -20,7 +22,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _updatePassword() async {
     setState(() => isLoading = true);
 
-    const url = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/reset_password.php";
+    const url = "${AppConfig.baseUrl}/reset_password.php";
 
     try {
       final response = await http.post(

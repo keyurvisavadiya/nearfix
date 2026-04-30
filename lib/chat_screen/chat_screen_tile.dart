@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
+import '../app_config.dart';
 import 'chatscreen.dart' show ProviderChatMessageScreen;
 
 const Color _primary = Color(0xFF33365D);
@@ -22,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   int? _currentUserId;
 
-  final String _baseUrl = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+  final String _baseUrl = "${AppConfig.baseUrl}/";
 
   @override
   void initState() {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../app_config.dart';
 import 'add_address_form_screen.dart';
 
 const Color _primary = Color(0xFF33365D);
@@ -30,7 +31,7 @@ class _AddressScreenState extends State<AddressScreen> {
     if (userId == null) return;
 
     final url =
-        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/get_address.php?user_id=$userId";
+        "${AppConfig.baseUrl}/get_address.php?user_id=$userId";
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -72,7 +73,7 @@ class _AddressScreenState extends State<AddressScreen> {
       }
     });
 
-    const url = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/delete_address.php";
+    const url = "${AppConfig.baseUrl}/delete_address.php";
 
     try {
       final response = await http.post(

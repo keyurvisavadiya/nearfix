@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/home_screen/home_screen.dart';
 
+import '../app_config.dart';
+
 const Color _primary = Color(0xFF33365D);
 const Color _bg = Color(0xFFF4F5FB);
 
@@ -35,7 +37,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => isLoading = true);
     const String url =
-        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/signup.php";
+        "${AppConfig.baseUrl}/signup.php";
     try {
       final response = await http.post(
         Uri.parse(url),

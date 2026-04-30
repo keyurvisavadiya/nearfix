@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/address_screen/address_screen.dart';
 import 'package:nearfix/payment_screen/ghost_payment_screen.dart';
 
+import '../app_config.dart';
+
 class ScheduleServiceScreen extends StatefulWidget {
   final String serviceName;
   final String providerId;
@@ -141,7 +143,7 @@ class _ScheduleServiceScreenState extends State<ScheduleServiceScreen>
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id');
     const String url =
-        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/schedule_service.php";
+        "${AppConfig.baseUrl}/schedule_service.php";
     try {
       final response = await http.post(
         Uri.parse(url),

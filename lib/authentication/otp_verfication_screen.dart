@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:nearfix/authentication/reset_password_screen.dart';
 
+import '../app_config.dart';
+
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
   final String serverOtp; // The "Debug" OTP we got from PHP
@@ -29,7 +31,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    const url = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/verify_otp.php";
+    const url = "${AppConfig.baseUrl}/verify_otp.php";
 
     try {
       final response = await http.post(

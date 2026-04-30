@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../app_config.dart';
 import '../service_provider_detail/service_provider_detail.dart';
 
 class ServiceProvidersScreen extends StatefulWidget {
@@ -21,7 +22,7 @@ class ServiceProvidersScreen extends StatefulWidget {
 
 class _ServiceProvidersScreenState extends State<ServiceProvidersScreen> {
   static const Color primaryColor = Color(0xFF33365D);
-  final String baseUrl = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+  final String baseUrl = "${AppConfig.baseUrl}/";
 
   List<dynamic> _providers = [];
   bool _isLoading = true;

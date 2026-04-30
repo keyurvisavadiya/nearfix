@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/address_screen/address_screen.dart';
 import 'package:nearfix/profile_screen/edit_profile.dart';
 import 'package:nearfix/profile_screen/help_support_screen.dart';
+import '../app_config.dart';
 import '../authentication/sign_in.dart';
 
 // ── Palette ───────────────────────────────────────────────────────
@@ -30,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   late final Animation<Offset> _slideAnim;
 
   final String _baseUrl =
-      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+      "${AppConfig.baseUrl}/";
 
   @override
   void initState() {

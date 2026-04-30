@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../app_config.dart';
 import 'otp_verfication_screen.dart';
 
 const Color _primary = Color(0xFF33365D);
@@ -29,7 +30,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => isLoading = true);
 
     // Replace with your current ngrok link
-    const String url = "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/forgot_password.php";
+    const String url = "${AppConfig.baseUrl}/forgot_password.php";
 
     try {
       final response = await http.post(

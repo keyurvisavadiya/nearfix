@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nearfix/authentication/sign_up.dart';
 import 'package:nearfix/home_screen/home_screen.dart';
 
+import '../app_config.dart';
+
 const Color _primary = Color(0xFF33365D);
 const Color _bg = Color(0xFFF4F5FB);
 
@@ -32,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginUser() async {
     setState(() => isLoading = true);
     const String url =
-        "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/login.php";
+        "${AppConfig.baseUrl}/login.php";
     try {
       final response = await http.post(
         Uri.parse(url),

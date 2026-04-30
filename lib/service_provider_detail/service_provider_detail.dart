@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nearfix/booking_screen/scheduling_screen.dart';
 
+import '../app_config.dart';
+
 const Color _primary = Color(0xFF33365D);
 const Color _bg      = Color(0xFFF6F7FB);
 
@@ -27,7 +29,7 @@ class _ServiceProviderDetailScreenState
     extends State<ServiceProviderDetailScreen> {
   // Update this URL whenever you restart ngrok
   final String _baseUrl =
-      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+      "${AppConfig.baseUrl}/";
 
   // --- REVIEW STATE ---
   List<dynamic> _reviewData = [];

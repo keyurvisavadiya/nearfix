@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nearfix/chat_screen/chatscreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart'; // ✅ Added
+import 'package:url_launcher/url_launcher.dart';
+
+import '../app_config.dart'; // ✅ Added
 
 const Color _primary = Color(0xFF33365D);
 const Color _accent = Color(0xFF6366F1);
@@ -22,7 +24,7 @@ class _BookingDetailsUIState extends State<BookingDetailsUI> {
   bool isLoading = true;
 
   final String _baseUrl =
-      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+      "${AppConfig.baseUrl}/";
 
   @override
   void initState() {

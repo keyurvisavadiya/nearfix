@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../app_config.dart';
+
 const Color _primary = Color(0xFF33365D);
 const Color _bg = Color(0xFFF4F5FB);
 
@@ -27,7 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool isLoading = false;
 
   final String baseUrl =
-      "https://marcella-intonational-tatyana.ngrok-free.dev/nearfix/";
+      "${AppConfig.baseUrl}/";
 
   @override
   void initState() {
